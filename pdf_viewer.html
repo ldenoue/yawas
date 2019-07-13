@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+<title>Yawas PDF Viewer</title>
+  <link rel="stylesheet" type="text/css" href="pdf_viewer.css"/>
+  <style type="text/css">
+    body {
+      background: #333;
+      font-family: Helvetica Neue, arial, sans-serif;
+      margin: 8px auto;
+      position: relative;
+      color:white;
+    }
+    .overlay{position:absolute}
+    .overlay:hover{cursor:pointer;background-color:black;opacity:0.1}
+    .pdfViewer .canvasWrapper {
+      /*box-shadow: 0 0 3px #bbb;*/
+    }
+    a{color:#aaa}
+    #original,#loading,#npagesdiv,#originalurl{
+    overflow:hidden;text-overflow: ellipsis;
+    display:inline-block;font-size:14px;color:#aaa;padding: 4px;}
+    #header{z-index:200;position:fixed}
+    #npagesdiv{cursor:pointer}
+    .linkAnnotation{border:0!important}
+    .linkAnnotation > a{border-bottom:1px solid blue}
+
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div id="loading">Loading PDF</div><div id="npagesdiv"></div><div id="original"></div>
+  </div>
+  <div id="viewer" class="pdfViewer"></div>
+  <!--script src="pdf.min.js"></script-->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist/build/pdf.min.js"></script>
+  <script src="pdf_viewer.js"></script>
+</body>
+</html>

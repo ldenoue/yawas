@@ -584,7 +584,7 @@ var SimpleLinkService = (function SimpleLinkServiceClosure() {
     viewer.appendChild(page);
 
 	  pdfDocument.getPage(num).then(function (pdfPage) {
-	    var viewport = pdfPage.getViewport(DEFAULT_SCALE);
+	    var viewport = pdfPage.getViewport({scale:DEFAULT_SCALE});
 	    if (num === 1)
 	    {
         PAGE_HEIGHT = viewport.height;
@@ -612,9 +612,9 @@ var SimpleLinkService = (function SimpleLinkServiceClosure() {
       pdfPage.render({
 	      canvasContext: canvasContext,
 	      viewport: viewport
-	    }).then(function(){
+	    }).promise.then(function(){
   	    yawas_remapAnnotations(yawas_annotations,pageNum);
-  	  });
+  	  }).catch(err => alert(err));
     });
   }
 
@@ -627,7 +627,7 @@ var SimpleLinkService = (function SimpleLinkServiceClosure() {
 	    var annotationLayer = page.querySelector('.annotationLayer');
 	    var canvasContext = canvas.getContext('2d');
 	    canvasContext.setTransform(1, 0, 0, 1, 0, 0);
-	    var viewport = pdfPage.getViewport(DEFAULT_SCALE);
+	    var viewport = pdfPage.getViewport({scale:DEFAULT_SCALE});
 
 	    canvas.width = viewport.width * 2;
 	    canvas.height = viewport.height * 2;
@@ -641,45 +641,33 @@ var SimpleLinkService = (function SimpleLinkServiceClosure() {
 	    pdfPage.render({
 	      canvasContext: canvasContext,
 	      viewport: viewport
-	    }).then(function(){
-
-        /*pdfPage.getAnnotations({ intent: 'display' }).then(function (annotations) {
-          annotations.forEach(function (a,i){if (!a.url || a.subtype!=='Link'){annotations[i]=null}});
-          annotations = annotations.filter(a => a !== null);
-
-          var parameters = {
-            viewport: viewport.clone({ dontFlip: true }),
-            div: annotationLayer,
-            annotations: annotations,
-            page: pdfPage,
-            renderInteractiveForms: false,
-            linkService: linkService,
-            downloadManager: null
-          };
-          PDFJS.AnnotationLayer.render(parameters);
-        });*/
-        pdfPage.getTextContent({ disableCombineTextItems: false, normalizeWhitespace: true }).then(function (textContent) {
+	    }).promise.then(function(){
+        pdfPage.getTextContent({ normalizeWhitespace: true }).then(function (textContent) {
           textContent.viewportTransform = viewport.transform;
           processTextItems(textContent,canvas.width,canvas.height);
+          //console.log(textContent);
           PDFJS.renderTextLayer({
             textContent: textContent,
             container: container,
             viewport: viewport,
-            textDivs: []
-          });
-          page.setAttribute('data-rendered', 'true');
-          setTimeout(function (){
-            if (pageNum === 1)
-              askForAnnotations();
-            if (receivedAnnotations)
-              yawas_remapAnnotations(yawas_annotations,pageNum);
-            else
-            {
-              remapLater.push(pageNum);
-            }
-          },200);
+            textDivs: [],
+            //enhanceTextSelection: true,
+            
+          }).promise.then(() => {
+            page.setAttribute('data-rendered', 'true');
+            setTimeout(function (){
+              if (pageNum === 1)
+                askForAnnotations();
+              if (receivedAnnotations)
+                yawas_remapAnnotations(yawas_annotations,pageNum);
+              else
+              {
+                remapLater.push(pageNum);
+              }
+            },200);
+          }).catch(err => alert(err));
         });
-      });
+      }).catch(err => alert(err));
 	    page.setAttribute('data-loaded', 'true');
 
 	    return pdfPage;

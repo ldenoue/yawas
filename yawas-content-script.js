@@ -212,14 +212,14 @@ function isSavingLocally(cb)
 
 function yawas_undohighlight()
 {
-    if (lastHighlight != null)
-    {
-        var f = document.createDocumentFragment();
-        while(lastHighlight.firstChild)
-            f.appendChild(lastHighlight.firstChild);
-        lastHighlight.parentNode.replaceChild(f,lastHighlight);
-        lastHighlight = null;
-    }
+  if (lastHighlight !== null)
+  {
+    var f = document.createDocumentFragment();
+    while(lastHighlight.firstChild)
+      f.appendChild(lastHighlight.firstChild);
+    lastHighlight.parentNode.replaceChild(f,lastHighlight);
+    lastHighlight = null;
+  }
 }
 
 function addHighlightsWrapper()
@@ -276,8 +276,12 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
           recolor('note');
         }
       }
-      if (res.undohighlight)
+      if (res.undohighlight || res.error)
+      {
+        if (res.signedout)
+          alert('You are signed out, cannot store highlight. Please signin first');
         yawas_undohighlight();
+      }
     });
 }
 
@@ -369,6 +373,8 @@ function recolor(color)
     hoverElement.style.backgroundColor = googleColors[color];
     childrenToo(hoverElement,googleColors[color]);
     updateHighlight(hoverElement,color,null);
+    // clear the selection (on Firefox we selected the text inside oncontextmenu)
+    window.getSelection().removeAllRanges();
   }
 }
 
@@ -575,16 +581,28 @@ function highlightNowFirefox22(selectionrng,color,textcolor,doc, selectionstring
     
     node.addEventListener('mouseover',function (e) {
       hoverElement = this;
-      //hoverElement.style.backgroundColor = hoverColor;
     },false);
 
     node.addEventListener('mouseout',function (e) {
-      //if (hoverElement)
-      //  hoverElement.style.backgroundColor = hoverElement.dataset.yawasColor;
       hoverElement = null;
     },false);
 
     return node;
+}
+
+// on Firefox, we need to select the text before showing the context menu
+// on Chrome, somehow the current word is selected when the user right clicks over words
+window.oncontextmenu = function () {
+  if (hoverElement !== null)
+  {
+    let selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      selection.removeAllRanges();
+    }
+    let range = document.createRange();
+    range.selectNode(hoverElement);
+    selection.addRange(range);
+  }
 }
 
 function childrenToo(docfrag,backgroundColor)
@@ -840,7 +858,7 @@ else
     else
     {
         addHighlightsWrapper();
-        addStyle(window.document,`.yawas-highlight:hover{background-color:#ccc!important;}.yawas-highlight[data-comment]{border-bottom:1px dashed black}`);
+        addStyle(window.document,`.yawas-highlight:hover{opacity:0.6;/*background-color:#ccc!important;*/}.yawas-highlight[data-comment]{border-bottom:1px dashed black}`);
         /*addStyle(window.document,`.yawas-highlight[data-yawas-comment]:hover:after {
               opacity: 1;
               transition: all 0.3s ease-in-out;

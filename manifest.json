@@ -2,13 +2,13 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 2,
-  "version": "7.0.7",
+  "version": "7.0.9",
   "description": "Highlight Web and PDF files; stored online and recreated automatically when you revisit a page",
   "background": {"scripts": ["yawas-background.js"]},
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "exclude_matches": ["*://www.google.com/bookmarks/*","*://accounts.google.com/*","*://mail.google.com/*","*://docs.google.com/*","*://drive.google.com/*"],
+      "exclude_matches": ["*://*.slack.com/*","*://web.whatsapp.com/*","*://www.google.com/bookmarks/*","*://accounts.google.com/*","*://mail.google.com/*","*://docs.google.com/*","*://drive.google.com/*"],
       "js": ["yawas-content-script.js"],
       "all_frames": true
     }
@@ -23,5 +23,35 @@
 	"icons": {
    "16": "icon16.png",
    "32": "icon32.png"
+  },
+  "commands": {
+    "yawas-yellow": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "MacCtrl+Shift+Y"
+      },
+      "description": "Yawas Yellow"
+    },
+    "yawas-red": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "mac": "MacCtrl+Shift+R"
+      },
+      "description": "Yawas Red"
+    },
+    "yawas-blue": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+B",
+        "mac": "MacCtrl+Shift+B"
+      },
+      "description": "Yawas Blue"
+    },
+    "yawas-green": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+G",
+        "mac": "MacCtrl+Shift+G"
+      },
+      "description": "Yawas Green"
+    }
   }
 }

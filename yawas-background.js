@@ -825,28 +825,28 @@ chrome.contextMenus.create({
 
 chrome.contextMenus.create({
                            "id" : "yellow",
-                           "title" : "Yellow (Ctrl-Shift-Y)",
+                           "title" : "Yellow",// (Ctrl-Shift-Y)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getClickHandler()
                            });
 chrome.contextMenus.create({
                            "id" : "red",
-                           "title" : "Red (Ctrl-Shift-R)",
+                           "title" : "Red",// (Ctrl-Shift-R)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getClickHandler()
                            });
 chrome.contextMenus.create({
                            "id" : "blue",
-                           "title" : "Blue (Ctrl-Shift-B)",
+                           "title" : "Blue",// (Ctrl-Shift-B)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getClickHandler()
                            });
 chrome.contextMenus.create({
                            "id" : "green",
-                           "title" : "Green (Ctrl-Shift-G)",
+                           "title" : "Green",// (Ctrl-Shift-G)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getClickHandler()
@@ -854,7 +854,7 @@ chrome.contextMenus.create({
 
 chrome.contextMenus.create({
                            "id" : "note",
-                           "title" : "Comment (Ctrl-Shift-C)",
+                           "title" : "Comment",// (Ctrl-Shift-C)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getClickHandler()
@@ -862,7 +862,7 @@ chrome.contextMenus.create({
 
 chrome.contextMenus.create({
                            "id" : "delete",
-                           "title" : "Delete (Ctrl-Shift-D)",
+                           "title" : "Delete",// (Ctrl-Shift-D)",
                            "type" : "normal",
                            "contexts" : ["selection"],
                            "onclick" : getDeleteHandler()
@@ -898,7 +898,22 @@ chrome.contextMenus.create({
                            "contexts" : ["page"],
                            "onclick" : getEditHandler()
                            });
-
+                           
+chrome.commands.onCommand.addListener(function(command) {
+  if (command === 'yawas-yellow')
+    sendMessageActiveTab({action:'yawas_chrome',color:'yellow'});
+  else if (command === 'yawas-red')
+    sendMessageActiveTab({action:'yawas_chrome',color:'red'});
+  else if (command === 'yawas-blue')
+    sendMessageActiveTab({action:'yawas_chrome',color:'blue'});
+  else if (command === 'yawas-green')
+    sendMessageActiveTab({action:'yawas_chrome',color:'green'});
+  else if (command === 'yawas-delete')
+    sendMessageActiveTab({action:'yawas_delete_highlight'});
+  else if (command === 'yawas-note')
+    sendMessageActiveTab({action:'yawas_chrome',color:'note'});
+});
+                           
 function purifyURL(href)
 {
   try {

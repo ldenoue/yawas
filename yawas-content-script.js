@@ -638,7 +638,10 @@ function updateHighlight(elt,color,newcomment)
     }
 }
 
-const codes = [89,82,66,71,68,67];
+// replaced with commands inside manifest.json
+// so users can customize their shortcuts
+
+/*const codes = [89,82,66,71,68,67];
 
 function keyListener(e)
 {
@@ -662,7 +665,7 @@ function keyListener(e)
     else if (e.keyCode === 68)
       yawas_delete_highlight();
   }
-}
+}*/
 
 function hoverElementOrSelection() {
   if (hoverElement !== null)
@@ -850,7 +853,7 @@ else if (document.location.href.indexOf('accounts.google.com/ServiceLogin') != -
 }
 else
 {
-    window.addEventListener("keydown", keyListener, false);
+    //window.addEventListener("keydown", keyListener, false);
     if (window.top !== window)
     {
         //console.error('cookkie_handler not calling getannotations because not top window');

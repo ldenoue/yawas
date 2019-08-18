@@ -495,7 +495,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 function getEmailHandler()
 {
     return function(info, tab) {
-        var url = tab.url;
+        var url = isPDF(tab.url);
         var title = tab.title;
         //alert('calling with url='+url+'-'+title);
         yawas_email(url,title);
@@ -505,7 +505,7 @@ function getEmailHandler()
 function getCopyClipboardHandler()
 {
   return function(info, tab) {
-    var url = tab.url;
+    var url = isPDF(tab.url);
     var title = tab.title;
     yawas_copyclipboard(url,title);
 };
@@ -805,13 +805,24 @@ function getSearchHandler() {
   };
 }
 
+function isPDF(href)
+{
+    if (href.indexOf('pdf_viewer.html') === -1)
+        return href;
+    let comps = href.split('?file=');
+    if (comps.length > 1)
+        return decodeURIComponent(comps[1])
+    else
+        return href;
+}
 function getEditHandler() {
   return function(info, tab) {
+    let possiblePDFUrl = isPDF(tab.url);
     //sendMessageActiveTab({action:'yawas_chrome_edit'});
     if (saveLocally)
-      chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + purifyURL(tab.url))});
+      chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + purifyURL(possiblePDFUrl))});
     else
-      chrome.tabs.create({url:"https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + purifyURL(tab.url) + "&title="  + tab.title});
+      chrome.tabs.create({url:"https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + purifyURL(possiblePDFUrl) + "&title="  + tab.title});
   };
 }
 

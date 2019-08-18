@@ -1064,7 +1064,7 @@ function addHighlightsWrapper()
   }
 }
 
-document.addEventListener('keydown', function (e){
+/*document.addEventListener('keydown', function (e){
   if (e.key === 'Delete')
   {
     e.preventDefault();
@@ -1088,7 +1088,7 @@ document.addEventListener('keydown', function (e){
     else if (e.keyCode == 69) // Email
       yawas_email();
   }
-},false);
+},false);*/
 
 addHighlightsWrapper();
 

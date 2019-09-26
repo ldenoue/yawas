@@ -11,6 +11,7 @@ var lenQuote = rightMark.length;
 var handlePDF = false;
 var saveLocally = false;
 var donate_url = 'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=chromeextension';
+var googleSignature = null;
 
 chrome.storage.sync.get({
     handlePDF: false,
@@ -61,26 +62,6 @@ function stripMobilizer(url)
     return url;
 }
 
-function yawas_getElement(xml, elementname)
-{
-    var e = xml.getElementsByTagName(elementname);
-    if (e.length == 0)
-        e = xml.getElementsByTagName('smh:' + elementname);
-    if (e==null)
-        console.log('yawas_getElement null for: ' + elementname);
-    return e;
-}
-
-function clearAbortTimer() {
-  if (abortTimerId != null)
-  {
-    window.clearTimeout(abortTimerId);
-    abortTimerId = null;
-  }
-}
-
-var googleSignature = null;
-
 async function exportAllBookmarks()
 {
     var start = 0;
@@ -108,11 +89,66 @@ async function exportAllBookmarks()
     return list;
 }
 
+let getannotationscb = {};
+let storeannotationscb = {};
+
+chrome.tabs.onUpdated.addListener(
+  function(tabId, changeInfo, tab) {
+    if (changeInfo.status === 'complete' && getannotationscb[tabId]) {
+      chrome.tabs.executeScript(tabId, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
+        chrome.tabs.remove(tabId);
+        if (!res || res.length !== 1 || !res[0].signature)
+        {
+          yawas_setStatusIcon("off");
+          //console.log('googleSignature empty');
+          getannotationscb[tabId].cb({error:'logged out',signedout:true});
+          delete getannotationscb[tabId];
+        }
+        else
+        {
+          googleSignature = res[0].signature;
+          let webAnnotation = res[0].annotation;
+          let webLabels = res[0].labels;
+          webAnnotation = formatAnnotation(webAnnotation);
+          yawas_remapAnnotations(getannotationscb[tabId].webUrl,webAnnotation,webLabels,getannotationscb[tabId].cb);
+          delete getannotationscb[tabId];
+        }
+      });
+    }
+    else if (changeInfo.status === 'complete' && storeannotationscb[tabId]) {
+      chrome.tabs.executeScript(tabId, {runAt:'document_end',code: 'window.location.href'}, function (res) {
+        chrome.tabs.remove(tabId);
+        //console.log(res,res.length,res[0],res[0].indexOf('signin'));
+        if (!res || (res.length >= 1 && isSignin(res[0])))
+        {
+          //console.log('error not signed in');
+          if (storeannotationscb[tabId])
+            storeannotationscb[tabId].cb({error:'not signed in',signedout:true});
+        }
+        else
+        {
+          //console.log('ok, could store highlight');
+          if (storeannotationscb[tabId])
+            storeannotationscb[tabId].cb({ok:true});
+        }
+        delete storeannotationscb[tabId];
+      });
+    }
+  }
+);
+
+function isSignin(url)
+{
+  let lowUrl = url.toLowerCase();
+  return lowUrl.indexOf('accounts.google') !== -1 && (lowUrl.indexOf('signin') !== -1 || lowUrl.indexOf('login') !== -1);
+}
+
 function yawas_getAnnotations(webUrl,cb)
 {
+    webUrl = purifyURL(webUrl);
     if (saveLocally)
     {
-      var keyName = purifyURL(webUrl).hashCode();
+      var keyName = webUrl.hashCode();
       var obj = {};
       obj[keyName] = null;
       chrome.storage.sync.get(obj,function(items) {
@@ -123,91 +159,28 @@ function yawas_getAnnotations(webUrl,cb)
       });
       return;
     }
-
-    googleSignature = null; // invalidate signature
-    
-    webUrl = purifyURL(webUrl);
-    var url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
-    var xhr = new XMLHttpRequest();
-    
-    abortTimerId = window.setTimeout(function() {
-      //console.error('aborted GET for url=',url);
-      xhr.abort();  // synchronously calls onreadystatechange
-      yawas_setStatusIcon("error");
-      cb({error:'network error'});
-    }, requestTimeout);
-    
-    xhr.open("GET",url,true);
-    xhr.onerror = function(error) {
-      console.log('xhr error',error);
-      clearAbortTimer();
-    }
-    
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4) {
-          if (xhr.status === 200)
-          {
-              clearAbortTimer();
-              if (xhr.responseURL === url) {
-                //console.log('got what we wanted, hooray!');
-              }
-              else {
-                yawas_setStatusIcon("off");
-                cb({error:'logged out',signedout:true});
-                return;
-              }
-
-              if (xhr.responseXML === null)
-              {
-                  yawas_setStatusIcon("error");
-                  cb({error:'no XML'});
-                  return;
-              }
-              var signature = yawas_getElement(xhr.responseXML,'signature'); //xhr.responseXML.getElementsByTagName('signature');
-              var gooSignature = '';
-              if (signature.length>0)
-                  gooSignature = signature[0].childNodes[0].nodeValue;
-              googleSignature = gooSignature;
-              //console.log('setting googleSignature to ' + googleSignature);
-              
-              yawas_setStatusIcon("on");
-
-              var items = yawas_getElement(xhr.responseXML, 'item'); //xhr.responseXML.getElementsByTagName('item');
-              if (items.length === 0)
-              {
-                  //console.error('items.length == 0');
-                  return cb({noannotation:true});
-              }
-              else if (items.length >= 1)
-              {
-                  for (var i=0;i<items.length;i++)
-                  {
-                      try {
-                          var annotation = yawas_getElement(items[i],'bkmk_annotation'); //items[i].getElementsByTagName('bkmk_annotation');
-                          var webAnnotation = '';
-                          if (annotation.length>0)
-                              webAnnotation = annotation[0].childNodes[0].nodeValue;
-                          
-                          var labels = yawas_getElement(items[i],'bkmk_label'); //items[i].getElementsByTagName('bkmk_label');
-                          var webLabels = '';
-                          if (labels.length>0)
-                          {
-                              for (var x=0;x<labels.length;x++)
-                                  webLabels += labels[x].childNodes[0].nodeValue + ',';
-                          }
-                          webAnnotation = formatAnnotation(webAnnotation);
-                          yawas_remapAnnotations(webUrl,webAnnotation,webLabels,cb);
-                      } catch (escript) { console.error(escript); }
-                  }
-              }
-          }
-          else
-          {
-              clearAbortTimer();
-          }
-      }
-    };
-    xhr.send(null);
+    let url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
+    //getannotationscb = cb;
+    chrome.tabs.create({ active: false, url: url }, function (tab) {
+      getannotationscb[tab.id] = {url:webUrl,cb:cb};
+      /*chrome.tabs.executeScript(tab.id, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
+        chrome.tabs.remove(tab.id);
+        if (!res || res.length !== 1 || !res[0].signature)
+        {
+          yawas_setStatusIcon("off");
+          console.log('googleSignature empty',res);
+          //cb({error:'logged out',signedout:true});
+        }
+        else
+        {
+          googleSignature = res[0].signature;
+          let webAnnotation = res[0].annotation;
+          let webLabels = res[0].labels;
+          webAnnotation = formatAnnotation(webAnnotation);
+          yawas_remapAnnotations(webUrl,webAnnotation,webLabels,cb);
+        }
+      });*/
+    });
 }
 
 function yawas_setStatusIcon(s)
@@ -355,60 +328,23 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
       return callback({ok:true});
     }
 
-
-    if (gooSignature == null)
+    if (!gooSignature)
     {
         callback({error:'not signed in',signedout:true});
         return;
     }
     webUrl = purifyURL(webUrl);
-    var xhr = new XMLHttpRequest();
-    abortTimerId = window.setTimeout(function() {
-      console.log('aborting yawas_storeHighlightsNow');
-        xhr.abort();  // synchronously calls onreadystatechange
-        callback({error:'timeout'});
-    }, requestTimeout);
     
     var url = "https://www.google.com/bookmarks/mark?hl=en";
-    xhr.open("POST", url);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.onerror = function(error) {clearAbortTimer();}
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-            if (xhr.status  == 200)
-            {
-                clearAbortTimer();
-                if (xhr.responseURL === url) {
-                    //console.log('got what we wanted, hooray!');
-                }
-                else {
-                    callback({error:'not signed in',signedout:true});
-                    return;
-                }
+    url += "&sig=" + gooSignature;
+    url += "&title=" + encodeURIComponent(title);
+    url += "&bkmk=" + encodeURIComponent(webUrl);
+    url += "&labels=" + encodeURIComponent(labels);
+    url += "&annotation=" + encodeURIComponent(annotations);
 
-                var signin = xhr == null || xhr.responseText.indexOf('Sign in') != -1;
-                if (signin)
-                {
-                    callback({error:'not signed in',signedout:true});
-                }
-                else
-                {
-                    callback({ok:true});
-                }
-            }
-            else
-            {
-                clearAbortTimer();
-            }
-            
-        }
-    };
-    var encoded = "sig=" + gooSignature;
-    encoded += "&title=" + encodeURIComponent(title);
-    encoded += "&bkmk=" + encodeURIComponent(webUrl);
-    encoded += "&labels=" + encodeURIComponent(labels);
-    encoded += "&annotation=" + encodeURIComponent(annotations);
-    xhr.send(encoded);
+    chrome.tabs.create({ active: false, url: url }, function (tab) {
+      storeannotationscb[tab.id] = {cb:callback};
+    });
 }
 
 function refreshBrowserAction(url)

@@ -279,7 +279,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
       if (res.undohighlight || res.error)
       {
         if (res.signedout)
-          alert('You are signed out, cannot store highlight. Please signin first');
+          alert('Yawas cannot store your highlight because you are signed out.\nPlease signin first and then refresh this page');
         yawas_undohighlight();
       }
     });
@@ -841,6 +841,8 @@ function yawas_next_highlight()
     currentHighlight += 1;
     setTimeout(function () { h.style.opacity=1.0; }, 300);
 }
+
+//console.log('here');
 
 if (document.location.hostname === 'toolbar.google.com' && document.location.pathname === '/command' && document.location.search && document.location.search.indexOf('close_browser') !== -1)
 {

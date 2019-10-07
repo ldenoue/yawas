@@ -108,9 +108,10 @@ chrome.tabs.onUpdated.addListener(
         {
           googleSignature = res[0].signature;
           let webAnnotation = res[0].annotation;
+          //console.log('webAnnotation=',webAnnotation,getannotationscb[tabId].url);
           let webLabels = res[0].labels;
           webAnnotation = formatAnnotation(webAnnotation);
-          yawas_remapAnnotations(getannotationscb[tabId].webUrl,webAnnotation,webLabels,getannotationscb[tabId].cb);
+          yawas_remapAnnotations(getannotationscb[tabId].url,webAnnotation,webLabels,getannotationscb[tabId].cb);
           delete getannotationscb[tabId];
         }
       });
@@ -160,26 +161,8 @@ function yawas_getAnnotations(webUrl,cb)
       return;
     }
     let url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
-    //getannotationscb = cb;
     chrome.tabs.create({ active: false, url: url }, function (tab) {
       getannotationscb[tab.id] = {url:webUrl,cb:cb};
-      /*chrome.tabs.executeScript(tab.id, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
-        chrome.tabs.remove(tab.id);
-        if (!res || res.length !== 1 || !res[0].signature)
-        {
-          yawas_setStatusIcon("off");
-          console.log('googleSignature empty',res);
-          //cb({error:'logged out',signedout:true});
-        }
-        else
-        {
-          googleSignature = res[0].signature;
-          let webAnnotation = res[0].annotation;
-          let webLabels = res[0].labels;
-          webAnnotation = formatAnnotation(webAnnotation);
-          yawas_remapAnnotations(webUrl,webAnnotation,webLabels,cb);
-        }
-      });*/
     });
 }
 
@@ -262,7 +245,10 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
     var webAnnotation = cachedAnnotations[qurl];
     var webLabels = cachedLabels[qurl];
     if (!webAnnotation)
+    {
+        console.error('no webannotation cached for',webUrl,qurl);
         webAnnotation = '';
+    }
     if (!webLabels)
         webLabels = '';
     webAnnotation = formatAnnotation(webAnnotation);
@@ -656,6 +642,7 @@ function updateHighlight(fragment, occurence, newcolor, comment, url, title,page
         if (res.ok)
         {
           cachedAnnotations[qurl] = webAnnotation;
+
           cb({highlights:highlights});
         }
         else
@@ -863,6 +850,9 @@ chrome.commands.onCommand.addListener(function(command) {
                            
 function purifyURL(href)
 {
+  if (href && href.indexOf('https://mail.google') === 0)
+    return href;
+
   try {
     var url = stripMobilizer(href);
     var pos = url.indexOf('#');

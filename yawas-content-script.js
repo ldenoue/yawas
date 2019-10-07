@@ -65,6 +65,8 @@ function updateHighlightCaption() {
 
 function purifyURL(href)
 {
+    if (href && href.indexOf('https://mail.google') === 0)
+      return href;
     var url = stripMobilizer(href);
     var pos = url.indexOf('#');
     if (pos > 0)
@@ -148,6 +150,7 @@ function askForAnnotations(delay)
       {
         signedin = true;
         hoverElement = null;
+        //globalAnnotations[url] = res.annotations;
         yawas_remapAnnotations(res.annotations);
         updateHighlightCaption();
       }
@@ -287,6 +290,8 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
 
 function yawas_tryHighlight(wnd,addcommentwhendone)
 {
+    if (!wnd)
+      return false;
     var nselections = wnd.getSelection().rangeCount;
     if (nselections === 0)
         return false;
@@ -459,6 +464,8 @@ function yawas_chrome(color)
       yawas_tryHighlight(wndWithSelection);
     }
 }
+
+//let globalAnnotations = {};
 
 function yawas_remapAnnotations(highlights)
 {
@@ -844,6 +851,19 @@ function yawas_next_highlight()
 
 //console.log('here');
 
+window.onhashchange = function (evt) {
+  /*console.log('hash changed',evt);
+  if (evt.newURL && globalAnnotations[evt.newURL])
+  {
+    setTimeout(function () {
+      yawas_remapAnnotations(globalAnnotations[evt.newURL]);
+    },2000);
+  }
+  else*/
+  {
+    askForAnnotations(2000);
+  }
+};
 if (document.location.hostname === 'toolbar.google.com' && document.location.pathname === '/command' && document.location.search && document.location.search.indexOf('close_browser') !== -1)
 {
     window.close();

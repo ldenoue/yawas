@@ -101,8 +101,11 @@ chrome.tabs.onUpdated.addListener(
         {
           yawas_setStatusIcon("off");
           //console.log('googleSignature empty');
-          getannotationscb[tabId].cb({error:'logged out',signedout:true});
-          delete getannotationscb[tabId];
+          if (getannotationscb[tabId])
+          {
+            getannotationscb[tabId].cb({error:'logged out',signedout:true});
+            delete getannotationscb[tabId];
+          }
         }
         else
         {
@@ -111,8 +114,11 @@ chrome.tabs.onUpdated.addListener(
           //console.log('webAnnotation=',webAnnotation,getannotationscb[tabId].url);
           let webLabels = res[0].labels;
           webAnnotation = formatAnnotation(webAnnotation);
-          yawas_remapAnnotations(getannotationscb[tabId].url,webAnnotation,webLabels,getannotationscb[tabId].cb);
-          delete getannotationscb[tabId];
+          if (getannotationscb[tabId])
+          {
+            yawas_remapAnnotations(getannotationscb[tabId].url,webAnnotation,webLabels,getannotationscb[tabId].cb);
+            delete getannotationscb[tabId];
+          }
         }
       });
     }
@@ -138,6 +144,22 @@ chrome.tabs.onUpdated.addListener(
   }
 );
 
+let hiddenWindowId = null;
+
+chrome.windows.onRemoved.addListener(function(windowId) {
+  if (windowId && windowId === hiddenWindowId)
+    createHiddenWindow();
+});
+
+function createHiddenWindow()
+{
+  chrome.windows.create({url:chrome.extension.getURL('yawas-get-annotations.html'),state:'minimized'},function (w) {
+    hiddenWindowId = w.id;
+  });
+}
+
+createHiddenWindow();
+
 function isSignin(url)
 {
   let lowUrl = url.toLowerCase();
@@ -161,7 +183,7 @@ function yawas_getAnnotations(webUrl,cb)
       return;
     }
     let url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
-    chrome.tabs.create({ active: false, url: url }, function (tab) {
+    chrome.tabs.create({ windowId: hiddenWindowId, active: false, url: url }, function (tab) {
       getannotationscb[tab.id] = {url:webUrl,cb:cb};
     });
 }
@@ -246,7 +268,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
     var webLabels = cachedLabels[qurl];
     if (!webAnnotation)
     {
-        console.error('no webannotation cached for',webUrl,qurl);
+        //console.error('no webannotation cached for',webUrl,qurl);
         webAnnotation = '';
     }
     if (!webLabels)
@@ -328,7 +350,7 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
     url += "&labels=" + encodeURIComponent(labels);
     url += "&annotation=" + encodeURIComponent(annotations);
 
-    chrome.tabs.create({ active: false, url: url }, function (tab) {
+    chrome.tabs.create({ windowId: hiddenWindowId, active: false, url: url }, function (tab) {
       storeannotationscb[tab.id] = {cb:callback};
     });
 }
@@ -933,16 +955,29 @@ function isPdfFile(details) {
 }
 chrome.webRequest.onHeadersReceived.addListener(
   function(details) {
+
+    /*var headers = details.responseHeaders;
+    var index = headers.findIndex(x=>x.name.toLowerCase() == "x-frame-options");
+    if (index !=-1) {
+     headers.splice(index, 1);
+     console.error('removed x-frame-options');
+    }*/
+    //return {responseHeaders: headers};
+
     if (!handlePDF)
       return;
+      //return {responseHeaders: headers};
     if (details.method !== 'GET') {
       return;
+      //return {responseHeaders: headers};
     }
     if (!isPdfFile(details)) {
       return;
+      //return {responseHeaders: headers};
     }
     if (isPdfDownloadable(details)) {
       return;
+      //return {responseHeaders: headers};
     }
 
     var viewerUrl = getViewerURL(details.url);

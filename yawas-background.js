@@ -97,6 +97,8 @@ chrome.tabs.onUpdated.addListener(
     if (changeInfo.status === 'complete' && getannotationscb[tabId]) {
       chrome.tabs.executeScript(tabId, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
         chrome.tabs.remove(tabId);
+        if (getannotationscb[tabId])
+          chrome.windows.remove(getannotationscb[tabId].windowId);
         if (!res || res.length !== 1 || !res[0].signature)
         {
           yawas_setStatusIcon("off");
@@ -125,6 +127,9 @@ chrome.tabs.onUpdated.addListener(
     else if (changeInfo.status === 'complete' && storeannotationscb[tabId]) {
       chrome.tabs.executeScript(tabId, {runAt:'document_end',code: 'window.location.href'}, function (res) {
         chrome.tabs.remove(tabId);
+        if (storeannotationscb[tabId])
+          chrome.windows.remove(storeannotationscb[tabId].windowId);
+
         //console.log(res,res.length,res[0],res[0].indexOf('signin'));
         if (!res || (res.length >= 1 && isSignin(res[0])))
         {
@@ -144,21 +149,15 @@ chrome.tabs.onUpdated.addListener(
   }
 );
 
-let hiddenWindowId = null;
-
-chrome.windows.onRemoved.addListener(function(windowId) {
-  if (windowId && windowId === hiddenWindowId)
-    createHiddenWindow();
-});
-
-function createHiddenWindow()
+function createHiddenWindow(cb)
 {
-  chrome.windows.create({url:chrome.extension.getURL('yawas-get-annotations.html'),state:'minimized'},function (w) {
-    hiddenWindowId = w.id;
+  chrome.windows.create({state:'minimized'},function (w) {
+    if (cb)
+      cb(w.id);
   });
 }
 
-createHiddenWindow();
+//createHiddenWindow(null);
 
 function isSignin(url)
 {
@@ -183,8 +182,10 @@ function yawas_getAnnotations(webUrl,cb)
       return;
     }
     let url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
-    chrome.tabs.create({ windowId: hiddenWindowId, active: false, url: url }, function (tab) {
-      getannotationscb[tab.id] = {url:webUrl,cb:cb};
+    createHiddenWindow(function (windowId) {
+      chrome.tabs.create({ windowId: windowId, active: false, url: url }, function (tab) {
+        getannotationscb[tab.id] = {windowId: windowId,url:webUrl,cb:cb};
+      });
     });
 }
 
@@ -350,8 +351,10 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
     url += "&labels=" + encodeURIComponent(labels);
     url += "&annotation=" + encodeURIComponent(annotations);
 
-    chrome.tabs.create({ windowId: hiddenWindowId, active: false, url: url }, function (tab) {
-      storeannotationscb[tab.id] = {cb:callback};
+    createHiddenWindow(function (windowId) {
+      chrome.tabs.create({ windowId: windowId, active: false, url: url }, function (tab) {
+       storeannotationscb[tab.id] = {windowId: windowId,cb:callback};
+     });
     });
 }
 

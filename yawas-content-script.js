@@ -533,8 +533,14 @@ function yawas_uncompact(wnd,highlights)
 	}
 }
 
+let act = null;
 function highlightDoc(wnd,doc,highlights)
 {
+    //let act = document.activeElement;
+    //console.log(act.tagName);
+    let previousRange = null;
+    if (wnd.getSelection().rangeCount > 0)
+      previousRange = wnd.getSelection().getRangeAt(0);
     var scrollLeft = wnd.scrollX;
     var scrollTop = wnd.scrollY;
     nremapped = highlights.length;
@@ -559,6 +565,13 @@ function highlightDoc(wnd,doc,highlights)
     }
     wnd.getSelection().removeAllRanges();
     wnd.scrollTo(scrollLeft,scrollTop);
+    if (previousRange)
+      wnd.getSelection().addRange(previousRange);
+    /*if (act && act.select)
+    {
+      console.log('active=',act,act.selectionStart,act.selectionEnd);
+      act.select();
+    }*/
     return nremapped;
 }
 

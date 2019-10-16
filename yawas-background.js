@@ -89,10 +89,10 @@ async function exportAllBookmarks()
     return list;
 }
 
-let getannotationscb = {};
-let storeannotationscb = {};
+//let getannotationscb = {};
+//let storeannotationscb = {};
 
-chrome.tabs.onUpdated.addListener(
+/*chrome.tabs.onUpdated.addListener(
   function(tabId, changeInfo, tab) {
     if (changeInfo.status === 'complete' && getannotationscb[tabId]) {
       chrome.tabs.executeScript(tabId, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
@@ -147,15 +147,15 @@ chrome.tabs.onUpdated.addListener(
       });
     }
   }
-);
+);*/
 
-function createHiddenWindow(cb)
+/*function createHiddenWindow(cb)
 {
   chrome.windows.create({state:'minimized'},function (w) {
     if (cb)
       cb(w.id);
   });
-}
+}*/
 
 //createHiddenWindow(null);
 
@@ -165,8 +165,9 @@ function isSignin(url)
   return lowUrl.indexOf('accounts.google') !== -1 && (lowUrl.indexOf('signin') !== -1 || lowUrl.indexOf('login') !== -1);
 }
 
-function yawas_getAnnotations(webUrl,cb)
+/*function yawas_getAnnotations(webUrl,cb)
 {
+    //console.log('yawas_getAnnotations',webUrl);
     webUrl = purifyURL(webUrl);
     if (saveLocally)
     {
@@ -187,6 +188,129 @@ function yawas_getAnnotations(webUrl,cb)
         getannotationscb[tab.id] = {windowId: windowId,url:webUrl,cb:cb};
       });
     });
+}*/
+
+var abortTimerId = null;
+var requestTimeout = 1000 * 5;  // 5 seconds
+
+function yawas_getElement(xml, elementname)
+{
+    var e = xml.getElementsByTagName(elementname);
+    if (e.length == 0)
+        e = xml.getElementsByTagName('smh:' + elementname);
+    if (e==null)
+        console.log('yawas_getElement null for: ' + elementname);
+    return e;
+}
+
+function clearAbortTimer() {
+  if (abortTimerId != null)
+  {
+    window.clearTimeout(abortTimerId);
+    abortTimerId = null;
+  }
+}
+
+function yawas_getAnnotations(webUrl,cb)
+{
+    if (saveLocally)
+    {
+      var keyName = purifyURL(webUrl).hashCode();
+      var obj = {};
+      obj[keyName] = null;
+      chrome.storage.sync.get(obj,function(items) {
+        if (items[keyName])
+        {
+          yawas_remapAnnotations(webUrl,items[keyName].annotations,items[keyName].labels,cb);
+        }
+      });
+      return;
+    }
+
+    googleSignature = null; // invalidate signature
+
+    webUrl = purifyURL(webUrl);
+    var url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
+    var xhr = new XMLHttpRequest();
+
+    abortTimerId = window.setTimeout(function() {
+      //console.error('aborted GET for url=',url);
+      xhr.abort();  // synchronously calls onreadystatechange
+      yawas_setStatusIcon("error");
+      cb({error:'network error'});
+    }, requestTimeout);
+
+    xhr.open("GET",url,true);
+    xhr.onerror = function(error) {
+      console.log('xhr error',error);
+      clearAbortTimer();
+    }
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+          if (xhr.status === 200)
+          {
+              clearAbortTimer();
+              if (xhr.responseURL === url) {
+                //console.log('got what we wanted, hooray!');
+              }
+              else {
+                yawas_setStatusIcon("off");
+                cb({error:'logged out',signedout:true});
+                return;
+              }
+
+              if (xhr.responseXML === null)
+              {
+                  yawas_setStatusIcon("error");
+                  cb({error:'no XML'});
+                  return;
+              }
+              var signature = yawas_getElement(xhr.responseXML,'signature'); //xhr.responseXML.getElementsByTagName('signature');
+              var gooSignature = '';
+              if (signature.length>0)
+                  gooSignature = signature[0].childNodes[0].nodeValue;
+              googleSignature = gooSignature;
+              //console.log('setting googleSignature to ' + googleSignature);
+
+              yawas_setStatusIcon("on");
+
+              var items = yawas_getElement(xhr.responseXML, 'item'); //xhr.responseXML.getElementsByTagName('item');
+              if (items.length === 0)
+              {
+                  //console.error('items.length == 0');
+                  return cb({noannotation:true});
+              }
+              else if (items.length >= 1)
+              {
+                  for (var i=0;i<items.length;i++)
+                  {
+                      try {
+                          var annotation = yawas_getElement(items[i],'bkmk_annotation'); //items[i].getElementsByTagName('bkmk_annotation');
+                          var webAnnotation = '';
+                          if (annotation.length>0)
+                              webAnnotation = annotation[0].childNodes[0].nodeValue;
+
+                          var labels = yawas_getElement(items[i],'bkmk_label'); //items[i].getElementsByTagName('bkmk_label');
+                          var webLabels = '';
+                          if (labels.length>0)
+                          {
+                              for (var x=0;x<labels.length;x++)
+                                  webLabels += labels[x].childNodes[0].nodeValue + ',';
+                          }
+                          webAnnotation = formatAnnotation(webAnnotation);
+                          yawas_remapAnnotations(webUrl,webAnnotation,webLabels,cb);
+                      } catch (escript) { console.error(escript); }
+                  }
+              }
+          }
+          else
+          {
+              clearAbortTimer();
+          }
+      }
+    };
+    xhr.send(null);
 }
 
 function yawas_setStatusIcon(s)
@@ -325,7 +449,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
    });
 }
 
-function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
+/*function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
 {
     if (saveLocally)
     {
@@ -356,6 +480,74 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
        storeannotationscb[tab.id] = {windowId: windowId,cb:callback};
      });
     });
+}*/
+
+function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
+{
+    if (saveLocally)
+    {
+      var keyName = purifyURL(webUrl).hashCode();
+      var obj = {};
+      obj[keyName] = {title:title,labels:labels,annotations:annotations};
+      chrome.storage.sync.set(obj,function() {
+      });
+      return callback({ok:true});
+    }
+
+
+    if (gooSignature == null)
+    {
+        callback({error:'not signed in',signedout:true});
+        return;
+    }
+    webUrl = purifyURL(webUrl);
+    var xhr = new XMLHttpRequest();
+    abortTimerId = window.setTimeout(function() {
+      console.log('aborting yawas_storeHighlightsNow');
+        xhr.abort();  // synchronously calls onreadystatechange
+        callback({error:'timeout'});
+    }, requestTimeout);
+
+    var url = "https://www.google.com/bookmarks/mark?hl=en";
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onerror = function(error) {clearAbortTimer();}
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            if (xhr.status  == 200)
+            {
+                clearAbortTimer();
+                if (xhr.responseURL === url) {
+                    //console.log('got what we wanted, hooray!');
+                }
+                else {
+                    callback({error:'not signed in',signedout:true});
+                    return;
+                }
+
+                var signin = xhr == null || xhr.responseText.indexOf('Sign in') != -1;
+                if (signin)
+                {
+                    callback({error:'not signed in',signedout:true});
+                }
+                else
+                {
+                    callback({ok:true});
+                }
+            }
+            else
+            {
+                clearAbortTimer();
+            }
+
+        }
+    };
+    var encoded = "sig=" + gooSignature;
+    encoded += "&title=" + encodeURIComponent(title);
+    encoded += "&bkmk=" + encodeURIComponent(webUrl);
+    encoded += "&labels=" + encodeURIComponent(labels);
+    encoded += "&annotation=" + encodeURIComponent(annotations);
+    xhr.send(encoded);
 }
 
 function refreshBrowserAction(url)

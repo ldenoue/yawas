@@ -2,7 +2,7 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 2,
-  "version": "7.1.7",
+  "version": "7.1.8",
   "description": "Highlight Web and PDF files; stored online and recreated automatically when you revisit a page",
   "background": {"scripts": ["yawas-background.js"]},
   "content_scripts": [
@@ -14,7 +14,7 @@
     }
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; object-src 'self'",
-  "permissions": ["storage","contextMenus","activeTab","tabs", "http://*/*", "https://*/*","webRequest", "webRequestBlocking", "<all_urls>"],
+  "permissions": ["cookies","storage","contextMenus","activeTab","tabs", "http://*/*", "https://*/*","webRequest", "webRequestBlocking", "<all_urls>"],
   "browser_action": {
 		"default_title": "Yawas",
   	"default_icon": "yawas_on_128.png",

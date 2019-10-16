@@ -150,7 +150,6 @@ function askForAnnotations(delay)
       {
         signedin = true;
         hoverElement = null;
-        //globalAnnotations[url] = res.annotations;
         yawas_remapAnnotations(res.annotations);
         updateHighlightCaption();
       }
@@ -369,6 +368,7 @@ function recolor(color)
         hoverElement.title = newcomment;
       }
       updateHighlight(hoverElement,color,newcomment);
+      hoverElement = null;
     }
     return;
   }
@@ -449,7 +449,7 @@ function yawas_chrome(color)
     }
     else
     {
-        currentColor = 'yellow';
+        //currentColor = 'yellow';
     }
 
     var elem = hoverElementOrSelection();
@@ -461,15 +461,15 @@ function yawas_chrome(color)
     else
     {
       var wndWithSelection = getWindowWithSelection(window);
-      yawas_tryHighlight(wndWithSelection);
+      if (color === 'note')
+        yawas_tryHighlight(wndWithSelection,true);
+      else
+        yawas_tryHighlight(wndWithSelection);
     }
 }
 
-//let globalAnnotations = {};
-
 function yawas_remapAnnotations(highlights)
 {
-  //console.log('yawas_remapAnnotations',highlights);
   return highlightDoc(window,document,highlights);
 }
 
@@ -865,17 +865,7 @@ function yawas_next_highlight()
 //console.log('here');
 
 window.onhashchange = function (evt) {
-  /*console.log('hash changed',evt);
-  if (evt.newURL && globalAnnotations[evt.newURL])
-  {
-    setTimeout(function () {
-      yawas_remapAnnotations(globalAnnotations[evt.newURL]);
-    },2000);
-  }
-  else*/
-  {
-    askForAnnotations(2000);
-  }
+  askForAnnotations(2000);
 };
 if (document.location.hostname === 'toolbar.google.com' && document.location.pathname === '/command' && document.location.search && document.location.search.indexOf('close_browser') !== -1)
 {

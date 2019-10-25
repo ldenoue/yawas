@@ -1107,7 +1107,6 @@ function getViewerURL(pdf_url) {
 }
 
 function isPdfDownloadable(details) {
-  console.log(details);
   if (details.url.indexOf('pdfjs.action=download') >= 0) {
     return true;
   }

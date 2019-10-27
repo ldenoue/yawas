@@ -17,9 +17,11 @@ chrome.storage.sync.get({
     handlePDF: false,
     saveLocally: false,
   }, function(items) {
-    handlePDF = items.handlePDF;
-    saveLocally = items.saveLocally;
-    //console.log('init handlePDF=',handlePDF,'saveLocally=',saveLocally);
+    if (items)
+    {
+      handlePDF = items.handlePDF;
+      saveLocally = items.saveLocally;
+    }
   });
 
 chrome.storage.onChanged.addListener(function(changes, namespace) {
@@ -92,103 +94,12 @@ async function exportAllBookmarks()
 //let getannotationscb = {};
 //let storeannotationscb = {};
 
-/*chrome.tabs.onUpdated.addListener(
-  function(tabId, changeInfo, tab) {
-    if (changeInfo.status === 'complete' && getannotationscb[tabId]) {
-      chrome.tabs.executeScript(tabId, {runAt:'document_end',file: 'yawas-grab-rss.js'}, function (res) {
-        chrome.tabs.remove(tabId);
-        if (getannotationscb[tabId])
-          chrome.windows.remove(getannotationscb[tabId].windowId);
-        if (!res || res.length !== 1 || !res[0].signature)
-        {
-          yawas_setStatusIcon("off");
-          //console.log('googleSignature empty');
-          if (getannotationscb[tabId])
-          {
-            getannotationscb[tabId].cb({error:'logged out',signedout:true});
-            delete getannotationscb[tabId];
-          }
-        }
-        else
-        {
-          googleSignature = res[0].signature;
-          let webAnnotation = res[0].annotation;
-          //console.log('webAnnotation=',webAnnotation,getannotationscb[tabId].url);
-          let webLabels = res[0].labels;
-          webAnnotation = formatAnnotation(webAnnotation);
-          if (getannotationscb[tabId])
-          {
-            yawas_remapAnnotations(getannotationscb[tabId].url,webAnnotation,webLabels,getannotationscb[tabId].cb);
-            delete getannotationscb[tabId];
-          }
-        }
-      });
-    }
-    else if (changeInfo.status === 'complete' && storeannotationscb[tabId]) {
-      chrome.tabs.executeScript(tabId, {runAt:'document_end',code: 'window.location.href'}, function (res) {
-        chrome.tabs.remove(tabId);
-        if (storeannotationscb[tabId])
-          chrome.windows.remove(storeannotationscb[tabId].windowId);
-
-        //console.log(res,res.length,res[0],res[0].indexOf('signin'));
-        if (!res || (res.length >= 1 && isSignin(res[0])))
-        {
-          //console.log('error not signed in');
-          if (storeannotationscb[tabId])
-            storeannotationscb[tabId].cb({error:'not signed in',signedout:true});
-        }
-        else
-        {
-          //console.log('ok, could store highlight');
-          if (storeannotationscb[tabId])
-            storeannotationscb[tabId].cb({ok:true});
-        }
-        delete storeannotationscb[tabId];
-      });
-    }
-  }
-);*/
-
-/*function createHiddenWindow(cb)
-{
-  chrome.windows.create({state:'minimized'},function (w) {
-    if (cb)
-      cb(w.id);
-  });
-}*/
-
-//createHiddenWindow(null);
 
 function isSignin(url)
 {
   let lowUrl = url.toLowerCase();
   return lowUrl.indexOf('accounts.google') !== -1 && (lowUrl.indexOf('signin') !== -1 || lowUrl.indexOf('login') !== -1);
 }
-
-/*function yawas_getAnnotations(webUrl,cb)
-{
-    //console.log('yawas_getAnnotations',webUrl);
-    webUrl = purifyURL(webUrl);
-    if (saveLocally)
-    {
-      var keyName = webUrl.hashCode();
-      var obj = {};
-      obj[keyName] = null;
-      chrome.storage.sync.get(obj,function(items) {
-        if (items[keyName])
-        {
-          yawas_remapAnnotations(webUrl,items[keyName].annotations,items[keyName].labels,cb);
-        }
-      });
-      return;
-    }
-    let url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
-    createHiddenWindow(function (windowId) {
-      chrome.tabs.create({ windowId: windowId, active: false, url: url }, function (tab) {
-        getannotationscb[tab.id] = {windowId: windowId,url:webUrl,cb:cb};
-      });
-    });
-}*/
 
 var abortTimerId = null;
 var requestTimeout = 1000 * 5;  // 5 seconds
@@ -219,7 +130,7 @@ function yawas_getAnnotations(webUrl,cb)
       var obj = {};
       obj[keyName] = null;
       chrome.storage.sync.get(obj,function(items) {
-        if (items[keyName])
+        if (items && items[keyName])
         {
           yawas_remapAnnotations(webUrl,items[keyName].annotations,items[keyName].labels,cb);
         }
@@ -256,7 +167,13 @@ function yawas_getAnnotations(webUrl,cb)
               }
               else {
                 yawas_setStatusIcon("off");
-                cb({error:'logged out',signedout:true});
+                if (xhr.responseURL.indexOf('/ServiceLogin') !== -1)
+                {
+                  cb({error:'logged out',signedout:true,url:xhr.responseURL});
+                }
+                else
+                  cb({error:'logged out',signedout:true});
+
                 return;
               }
 
@@ -324,6 +241,7 @@ function sendMessageActiveTab(json)
     if (tabs && tabs.length > 0)
     {    
       var tab = tabs[0];
+      //console.log(tab,json);
       chrome.tabs.sendMessage(tab.id, json, function(response) {});
     }
   });
@@ -448,39 +366,6 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
      }
    });
 }
-
-/*function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
-{
-    if (saveLocally)
-    {
-      var keyName = purifyURL(webUrl).hashCode();
-      var obj = {};
-      obj[keyName] = {title:title,labels:labels,annotations:annotations};
-      chrome.storage.sync.set(obj,function() {
-      });
-      return callback({ok:true});
-    }
-
-    if (!gooSignature)
-    {
-        callback({error:'not signed in',signedout:true});
-        return;
-    }
-    webUrl = purifyURL(webUrl);
-    
-    var url = "https://www.google.com/bookmarks/mark?hl=en";
-    url += "&sig=" + gooSignature;
-    url += "&title=" + encodeURIComponent(title);
-    url += "&bkmk=" + encodeURIComponent(webUrl);
-    url += "&labels=" + encodeURIComponent(labels);
-    url += "&annotation=" + encodeURIComponent(annotations);
-
-    createHiddenWindow(function (windowId) {
-      chrome.tabs.create({ windowId: windowId, active: false, url: url }, function (tab) {
-       storeannotationscb[tab.id] = {windowId: windowId,cb:callback};
-     });
-    });
-}*/
 
 function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
 {
@@ -1092,147 +977,3 @@ function purifyURL(href)
     return url;
   } catch (eurl) { return href; }
 }
-
-/*chrome.browserAction.onClicked.addListener(function(tab) {
-  try {
-    sendMessageActiveTab({action:'yawas_next_highlight'});
- } catch (e) {
- }
-});*/
-
-var VIEWER_URL = chrome.extension.getURL('/pdf_viewer.html');
-
-function getViewerURL(pdf_url) {
-  return VIEWER_URL + '?file=' + encodeURIComponent(pdf_url);
-}
-
-function isPdfDownloadable(details) {
-  if (details.url.indexOf('pdfjs.action=download') >= 0) {
-    return true;
-  }
-  if (details.type === 'main_frame' &&
-      details.url.indexOf('=download') === -1) {
-    return false;
-  }
-  var cdHeader = (details.responseHeaders &&
-    getHeaderFromHeaders(details.responseHeaders, 'content-disposition'));
-  return (cdHeader && /^attachment/i.test(cdHeader.value));
-}
-
-function getHeaderFromHeaders(headers, headerName) {
-  for (var i = 0; i < headers.length; ++i) {
-    var header = headers[i];
-    if (header.name.toLowerCase() === headerName) {
-      return header;
-    }
-  }
-}
-
-function isPdfFile(details) {
-  var header = getHeaderFromHeaders(details.responseHeaders, 'content-type');
-  if (header) {
-    var headerValue = header.value.toLowerCase().split(';', 1)[0].trim();
-    if (headerValue === 'application/pdf') {
-      return true;
-    }
-    if (headerValue === 'application/octet-stream') {
-      if (details.url.toLowerCase().indexOf('.pdf') > 0) {
-        return true;
-      }
-      var cdHeader =
-        getHeaderFromHeaders(details.responseHeaders, 'content-disposition');
-      if (cdHeader && /\.pdf(["']|$)/i.test(cdHeader.value)) {
-        return true;
-      }
-    }
-  }
-}
-chrome.webRequest.onHeadersReceived.addListener(
-  function(details) {
-
-    /*var headers = details.responseHeaders;
-    var index = headers.findIndex(x=>x.name.toLowerCase() == "x-frame-options");
-    if (index !=-1) {
-     headers.splice(index, 1);
-     console.error('removed x-frame-options');
-    }*/
-    //return {responseHeaders: headers};
-
-    if (!handlePDF)
-      return;
-      //return {responseHeaders: headers};
-    if (details.method !== 'GET') {
-      return;
-      //return {responseHeaders: headers};
-    }
-    if (!isPdfFile(details)) {
-      return;
-      //return {responseHeaders: headers};
-    }
-    if (isPdfDownloadable(details)) {
-      return;
-      //return {responseHeaders: headers};
-    }
-
-    var viewerUrl = getViewerURL(details.url);
-
-    if (details.frameId === 0) {
-      // Main frame. Just replace the tab and be done!
-      chrome.tabs.update(details.tabId, {
-        url: viewerUrl,
-      });
-      return { cancel: true, };
-    }
-  },
-  {
-    urls: [
-      '<all_urls>'
-    ],
-    types: ['main_frame', 'sub_frame'],
-  },
-  ['blocking', 'responseHeaders']);
-
-chrome.webRequest.onBeforeRequest.addListener(
-  function onBeforeRequestForFTP(details) {
-    if (!handlePDF)
-      return;
-    if (!true/*Features.extensionSupportsFTP*/) {
-      chrome.webRequest.onBeforeRequest.removeListener(onBeforeRequestForFTP);
-      return;
-    }
-    if (isPdfDownloadable(details)) {
-      return;
-    }
-    var viewerUrl = getViewerURL(details.url);
-    return { redirectUrl: viewerUrl, };
-  },
-  {
-    urls: [
-      'ftp://*/*.pdf',
-      'ftp://*/*.PDF'
-    ],
-    types: ['main_frame', 'sub_frame'],
-  },
-  ['blocking']);
-
-chrome.webRequest.onBeforeRequest.addListener(
-  function(details) {
-    if (!handlePDF)
-      return;
-
-    if (isPdfDownloadable(details)) {
-      return;
-    }
-
-    var viewerUrl = getViewerURL(details.url);
-
-    return { redirectUrl: viewerUrl, };
-  },
-  {
-    urls: [
-      'file://*/*.pdf',
-      'file://*/*.PDF'
-    ],
-    types: ['main_frame', 'sub_frame'],
-  },
-  ['blocking']);

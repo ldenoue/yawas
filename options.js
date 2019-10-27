@@ -1,18 +1,18 @@
 function loadOptions() {
   chrome.storage.sync.get({
-    handlePDF: false,
+    /*handlePDF: false,*/
     saveLocally: false
   }, function(items) {
-    document.getElementById('handlePDF').checked = items.handlePDF;
+    //document.getElementById('handlePDF').checked = items.handlePDF;
     document.getElementById('saveLocally').checked = items.saveLocally;
   });
 }
 
 function saveOptions() {
-  var handlePDF = document.getElementById("handlePDF").checked;
+  //var handlePDF = document.getElementById("handlePDF").checked;
   var saveLocally = document.getElementById("saveLocally").checked;
   chrome.storage.sync.set({
-    handlePDF: handlePDF,
+    /*handlePDF: handlePDF,*/
     saveLocally:saveLocally
   }, function() {
     //window.close();
@@ -21,10 +21,10 @@ function saveOptions() {
 
 function restoreOptions() {
   chrome.storage.sync.set({
-    handlePDF: false,
+    /*handlePDF: false,*/
     saveLocally: false
   }, function() {
-    document.getElementById("handlePDF").checked = false;
+    //document.getElementById("handlePDF").checked = false;
     document.getElementById('saveLocally').checked = false;
   });
 }
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', loadOptions);
 document.querySelector('#restore').addEventListener('click', restoreOptions);
 document.querySelector('#donate').addEventListener('click', donateOptions);
 
-let handlePDFElem = document.getElementById("handlePDF");
+//let handlePDFElem = document.getElementById("handlePDF");
 let saveLocallyElem = document.getElementById("saveLocally");
-handlePDFElem.addEventListener('change',saveOptions);
+//handlePDFElem.addEventListener('change',saveOptions);
 saveLocallyElem.addEventListener('change',saveOptions);

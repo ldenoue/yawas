@@ -138,7 +138,11 @@ function askForAnnotations(delay)
       if (res.error)
       {
         if (res.signedout)
+        {
           needSignIn();
+          if (res.url)
+            window.open(res.url);
+        }
       }
       else if (res.noannotation)
       {
@@ -886,34 +890,7 @@ else
     else
     {
         addHighlightsWrapper();
-        addStyle(window.document,`.yawas-highlight:hover{opacity:0.6;/*background-color:#ccc!important;*/}.yawas-highlight[data-comment]{border-bottom:1px dashed black}`);
-        /*addStyle(window.document,`.yawas-highlight[data-yawas-comment]:hover:after {
-              opacity: 1;
-              transition: all 0.3s ease-in-out;
-              visibility: visible;
-          }
-          .yawas-highlight[data-yawas-comment]:after {
-              content: attr(data-yawas-comment);
-              background-color: #8a8;
-              color: black;
-              font-size: 14px;
-              font-weight:bold;
-              font-family:"avenir next",Helvetica;
-              position: absolute;
-              border-radius: 16px;
-              padding: 16px 16px;
-              max-width:240px;
-              min-width:120px;
-              top: calc(100% + 8px);
-              left: calc(50% - 120px);
-              opacity: 0;
-              border: 0px solid #111111;
-              z-index: 99999;
-              visibility: hidden;
-          }
-          .yawas-highlight[data-yawas-comment] {
-              position: relative;
-          }`);*/
+        addStyle(window.document,'.yawas-highlight:hover{opacity:0.6;}.yawas-highlight[data-comment]{border-bottom:1px dashed black}');
         askForAnnotations(2000);
     }
     var elems = document.querySelectorAll('*');

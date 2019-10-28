@@ -978,20 +978,3 @@ function purifyURL(href)
     return url;
   } catch (eurl) { return href; }
 }
-
-//chrome.cookies.set({url:'http://www.google.com',sameSite:'unspecified'},function (res) {console.log(res)});
-/*chrome.webRequest.onBeforeSendHeaders.addListener(
-  function(details) {
-    console.error(details);
-    for (var i = 0; i < details.requestHeaders.length; ++i) {
-      console.log(details.requestHeaders[i].name);
-      if (details.requestHeaders[i].name === 'User-Agent') {
-        details.requestHeaders.splice(i, 1);
-        break;
-      }
-    }
-    return { requestHeaders: details.requestHeaders };
-  },
-  {urls: ['<all_urls>']},
-  [ 'blocking', 'requestHeaders']
-);*/

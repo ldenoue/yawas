@@ -141,7 +141,10 @@ function askForAnnotations(delay)
         {
           needSignIn();
           if (res.url)
-            window.open(res.url);
+          {
+            //window.open(res.url);
+            console.log('res.url=',res.url);
+          }
         }
       }
       else if (res.noannotation)

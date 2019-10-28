@@ -143,7 +143,7 @@ function yawas_getAnnotations(webUrl,cb)
     webUrl = purifyURL(webUrl);
     var url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
     var xhr = new XMLHttpRequest();
-
+    //xhr.withCredentials = true;
     abortTimerId = window.setTimeout(function() {
       //console.error('aborted GET for url=',url);
       xhr.abort();  // synchronously calls onreadystatechange
@@ -153,7 +153,8 @@ function yawas_getAnnotations(webUrl,cb)
 
     xhr.open("GET",url,true);
     xhr.onerror = function(error) {
-      console.log('xhr error',error);
+      //console.log('xhr error',error);
+      console.log('xhr error');
       clearAbortTimer();
     }
 
@@ -977,3 +978,20 @@ function purifyURL(href)
     return url;
   } catch (eurl) { return href; }
 }
+
+//chrome.cookies.set({url:'http://www.google.com',sameSite:'unspecified'},function (res) {console.log(res)});
+/*chrome.webRequest.onBeforeSendHeaders.addListener(
+  function(details) {
+    console.error(details);
+    for (var i = 0; i < details.requestHeaders.length; ++i) {
+      console.log(details.requestHeaders[i].name);
+      if (details.requestHeaders[i].name === 'User-Agent') {
+        details.requestHeaders.splice(i, 1);
+        break;
+      }
+    }
+    return { requestHeaders: details.requestHeaders };
+  },
+  {urls: ['<all_urls>']},
+  [ 'blocking', 'requestHeaders']
+);*/

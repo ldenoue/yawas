@@ -14,7 +14,7 @@ googleColors['blue'] = '#0df';//'lightblue';
 googleColors['red'] = '#ff9999';
 googleColors['green'] = '#99ff99';
 googleColors['white'] = 'transparent';
-
+var notRemapped = [];
 var INSTAPAPER_PREFIX  = "http://www.instapaper.com/text?u="
 var VIEWTEXT_PREFIX  = "http://viewtext.org/article?url="
 var READABILITY_PREFIX  = "http://www.readability.com/m?url="
@@ -39,6 +39,7 @@ function stripMobilizer(url)
 function updateHighlightCaption() {
     if (highlightswrapper)
     {
+      var nbNotRemapped = notRemapped.length;
       var nhighlights = document.getElementsByClassName('yawas-highlight').length;
       if (nhighlights > 0)
       {
@@ -51,6 +52,10 @@ function updateHighlightCaption() {
         else
         {
           highlightswrapper.textContent = nhighlights + ' highlight';
+        }
+        if (nbNotRemapped > 0)
+        {
+          highlightswrapper.textContent += ` (${nbNotRemapped} not found)`;
         }
       }
       else
@@ -143,7 +148,7 @@ function askForAnnotations(delay)
           if (res.url)
           {
             //window.open(res.url);
-            console.log('res.url=',res.url);
+            //console.log('res.url=',res.url);
           }
         }
       }
@@ -186,10 +191,6 @@ function requestCallback(request, sender, sendResponse) {
           highlightswrapper.textContent = 'Yawas ➜ Refresh to view annotations';
           highlightswrapper.style.display = 'block';
         }
-        /*setTimeout(function () {
-          updateHighlightCaption();
-          askForAnnotations();
-        },1000);*/
       }
     }
     else if (request.action === 'yawas_next_highlight')
@@ -259,6 +260,7 @@ function addHighlightsWrapper()
     highlightswrapper.style.borderRadius = '32px';
     highlightswrapper.style.padding = '8px 16px';
     highlightswrapper.textContent = '';
+    
     document.body.appendChild(highlightswrapper);
   }
 }
@@ -540,17 +542,15 @@ function yawas_uncompact(wnd,highlights)
 	}
 }
 
-let act = null;
 function highlightDoc(wnd,doc,highlights)
 {
-    //let act = document.activeElement;
-    //console.log(act.tagName);
     let previousRange = null;
     if (wnd.getSelection().rangeCount > 0)
       previousRange = wnd.getSelection().getRangeAt(0);
     var scrollLeft = wnd.scrollX;
     var scrollTop = wnd.scrollY;
-    nremapped = highlights.length;
+    nremapped = 0;
+    notRemapped = [];
     yawas_uncompact(wnd,highlights);
     for (var i=0;i<highlights.length;i++)
     {
@@ -563,22 +563,23 @@ function highlightDoc(wnd,doc,highlights)
         {
             n++;
         }
-        if (n==highlights[i].n && wnd.find(selectionString,true,false))
+        if (n == highlights[i].n && wnd.find(selectionString,true,false))
         {
-            try {
-                highlightNowFirefox22(wnd.getSelection().getRangeAt(0), highlights[i].color, forecolor, doc, highlights[i].selection, highlights[i].n,highlights[i].comment);
-            }catch(e){alert(e)}
+          try {
+            highlightNowFirefox22(wnd.getSelection().getRangeAt(0), highlights[i].color, forecolor, doc, highlights[i].selection, highlights[i].n,highlights[i].comment);
+            nremapped++;
+          }
+          catch(e){
+            console.error('error highlightNowFirefox22',e);
+          }
         }
+        else
+          notRemapped.push(highlights[i]);
     }
     wnd.getSelection().removeAllRanges();
     wnd.scrollTo(scrollLeft,scrollTop);
     if (previousRange)
       wnd.getSelection().addRange(previousRange);
-    /*if (act && act.select)
-    {
-      console.log('active=',act,act.selectionStart,act.selectionEnd);
-      act.select();
-    }*/
     return nremapped;
 }
 

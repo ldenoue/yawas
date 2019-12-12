@@ -36,6 +36,38 @@ function stripMobilizer(url)
     return url;
 }
 
+function setHighlightCaption(txt)
+{
+  if (highlightswrapper && highlightswrapper.querySelector('#highlightcaption'))
+    highlightswrapper.querySelector('#highlightcaption').textContent = txt;
+}
+
+function showNotFound()
+{
+  if (highlightsnotfoundtext.style.display === 'none')
+  {
+    var html = [];
+    notRemapped.forEach(highlight => html.push(highlight.selection));
+    highlightsnotfoundtext.innerHTML = `<div style='text-align:left;color:white'>${html.join('<br>')}</div>`;
+    highlightsnotfoundtext.style.display = 'block';
+  }
+  else
+    highlightsnotfoundtext.style.display = 'none';
+}
+
+function setHighlightsNotFound(array)
+{
+  if (highlightswrapper && highlightswrapper.querySelector('#highlightsnotfound'))
+  {
+    if (array.length > 0)
+    {
+      highlightswrapper.querySelector('#highlightsnotfound').textContent = array.length + ' missing';
+    }
+    else
+      highlightswrapper.querySelector('#highlightsnotfound').textContent = '';
+  }
+}
+
 function updateHighlightCaption() {
     if (highlightswrapper)
     {
@@ -47,16 +79,15 @@ function updateHighlightCaption() {
         if (nhighlights > 1)
         {
           var current = currentHighlight + 1;
-          highlightswrapper.textContent = current + '/' + nhighlights + ' highlights';
+          //highlightswrapper.textContent = current + '/' + nhighlights + ' highlights';
+          setHighlightCaption(current + '/' + nhighlights + ' highlights');
         }
         else
         {
-          highlightswrapper.textContent = nhighlights + ' highlight';
+          //highlightswrapper.textContent = nhighlights + ' highlight';
+          setHighlightCaption(nhighlights + ' highlight');
         }
-        if (nbNotRemapped > 0)
-        {
-          highlightswrapper.textContent += ` (${nbNotRemapped} not found)`;
-        }
+        setHighlightsNotFound(notRemapped);
       }
       else
       {
@@ -249,9 +280,10 @@ function addHighlightsWrapper()
     highlightswrapper.style.borderRadius = '0px';
     highlightswrapper.style.color = 'white';
     //highlightswrapper.style.boxShadow = '0 0 3px black';
-    highlightswrapper.addEventListener('click',yawas_next_highlight);
+    //highlightswrapper.addEventListener('click',yawas_next_highlight);
     highlightswrapper.textContent = '';
-    highlightswrapper.style.cursor = 'pointer';
+    highlightswrapper.style.textAlign = 'center';
+    //highlightswrapper.style.cursor = 'pointer';
     
     highlightswrapper.style.fontSize = '14px';
     highlightswrapper.style.fontWeight = 'bold';
@@ -259,7 +291,29 @@ function addHighlightsWrapper()
     highlightswrapper.style.backgroundColor = '#8a8';
     highlightswrapper.style.borderRadius = '32px';
     highlightswrapper.style.padding = '8px 16px';
-    highlightswrapper.textContent = '';
+    //highlightswrapper.textContent = '';
+    
+    var highlightcaption = document.createElement('div');
+    highlightcaption.addEventListener('click',yawas_next_highlight);
+    highlightcaption.title = 'Click to navigate in highlights';
+    highlightcaption.id = 'highlightcaption';
+    highlightcaption.style.cursor = 'pointer';
+    highlightcaption.textContent = '';
+    highlightswrapper.appendChild(highlightcaption);
+    
+    var highlightsnotfound = document.createElement('div');
+    highlightsnotfound.style.color = '#a22';
+    highlightsnotfound.style.cursor = 'pointer';
+    highlightsnotfound.addEventListener('click',showNotFound);
+    highlightsnotfound.title = 'Click to show missing highlights';
+    highlightsnotfound.id = 'highlightsnotfound';
+    highlightswrapper.appendChild(highlightsnotfound);
+
+    var highlightsnotfoundtext = document.createElement('div');
+    highlightsnotfoundtext.style.color = '#a22';
+    highlightsnotfoundtext.style.display = 'none';
+    highlightsnotfoundtext.id = 'highlightsnotfoundtext';
+    highlightswrapper.appendChild(highlightsnotfoundtext);
     
     document.body.appendChild(highlightswrapper);
   }

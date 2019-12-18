@@ -36,6 +36,14 @@ function stripMobilizer(url)
     return url;
 }
 
+let charactersUsed = 0;
+function setCharactersLeft(txt)
+{
+  charactersUsed = txt;
+  if (highlightswrapper && highlightswrapper.querySelector('#charactersleft'))
+    highlightswrapper.querySelector('#charactersleft').textContent = txt + '/2048 chars';
+
+}
 function setHighlightCaption(txt)
 {
   if (highlightswrapper && highlightswrapper.querySelector('#highlightcaption'))
@@ -79,12 +87,10 @@ function updateHighlightCaption() {
         if (nhighlights > 1)
         {
           var current = currentHighlight + 1;
-          //highlightswrapper.textContent = current + '/' + nhighlights + ' highlights';
           setHighlightCaption(current + '/' + nhighlights + ' highlights');
         }
         else
         {
-          //highlightswrapper.textContent = nhighlights + ' highlight';
           setHighlightCaption(nhighlights + ' highlight');
         }
         setHighlightsNotFound(notRemapped);
@@ -92,8 +98,6 @@ function updateHighlightCaption() {
       else
       {
         highlightswrapper.style.display = 'none';
-        //highlightswrapper.style.display = 'block';
-        //highlightswrapper.textContent = '0 highlight';
       }
     }
 
@@ -153,8 +157,7 @@ function needSignIn()
   signedin = false;
   if (highlightswrapper)
   {
-    //highlightswrapper.textContent = 'Yawas ➜ Click to sign in';
-    highlightswrapper.textContent = 'Signed out';
+    setHighlightCaption('Signed out');
     highlightswrapper.style.display = 'block';
   }
 }
@@ -193,6 +196,7 @@ function askForAnnotations(delay)
       {
         signedin = true;
         hoverElement = null;
+        setCharactersLeft(computeLength(res.annotations));
         yawas_remapAnnotations(res.annotations);
         updateHighlightCaption();
       }
@@ -219,7 +223,7 @@ function requestCallback(request, sender, sendResponse) {
         signedin = true; // this avoids loops: we declare we're signed first
         if (highlightswrapper)
         {
-          highlightswrapper.textContent = 'Yawas ➜ Refresh to view annotations';
+          setHighlightCaption('Yawas ➜ Refresh to view annotations');
           highlightswrapper.style.display = 'block';
         }
       }
@@ -315,6 +319,17 @@ function addHighlightsWrapper()
     highlightsnotfoundtext.id = 'highlightsnotfoundtext';
     highlightswrapper.appendChild(highlightsnotfoundtext);
     
+    var charactersleft = document.createElement('div');
+    charactersleft.style.color = '#000';
+    charactersleft.style.fontSize = '11px';
+    charactersleft.style.cursor = 'pointer';
+    charactersleft.title = 'Number of total characters used for this page in Google Bookmarks, out of 2048 possible';
+    charactersleft.addEventListener('click',function () { alert(charactersUsed + ' characters used out of 2048 allowed by Google Bookmarks for this page')},false);
+    charactersleft.style.display = 'block';
+    charactersleft.id = 'charactersleft';
+    highlightswrapper.appendChild(charactersleft);
+
+    
     document.body.appendChild(highlightswrapper);
   }
 }
@@ -334,12 +349,18 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
       if (res.addedhighlight)
       {
         signedin = true;
+        setCharactersLeft(res.pureLen);
         updateHighlightCaption();
         if (addcommentwhendone)
         {
           hoverElement = lastHighlight;
           recolor('note');
         }
+      }
+      if (res.toobig)
+      {
+        yawas_undohighlight();
+        alert('Too many characters (>2048 even compacted)!');
       }
       if (res.undohighlight || res.error)
       {
@@ -713,9 +734,16 @@ function updateHighlight(elt,color,newcomment)
         sendMessage({action: "recolor_highlight", highlightString: hoverElement.dataset.selection, n:hoverElement.dataset.yawasOccurence, newcolor: color, comment:newcomment}, function (res){
           if (res.error)
           {
-            console.error(res);
+            //console.error(res);
             yawas_undohighlight();
-          } 
+            if (res.toobig)
+              alert('Too many characters (>2048 even compacted)!');
+          }
+          else
+          {
+            if (res && res.highlights)
+              setCharactersLeft(computeLength(res.highlights));
+          }
         });
     }
 }
@@ -766,11 +794,34 @@ function hoverElementOrSelection() {
   return null;
 }
 
+function computeLength(highlights)
+{
+    var annotation = '';
+    for (var i=0;i<highlights.length;i++)
+    {
+      if (highlights[i].comment)
+        annotation += highlights[i].comment;
+      annotation += leftMark + highlights[i].selection;
+      if (highlights[i].p)
+        annotation += '@' + highlights[i].n + ',' + highlights[i].p;
+      else if (highlights[i].n > 0)
+          annotation += '@' + highlights[i].n;
+      if (highlights[i].color != 'yellow')
+          annotation += '#' + highlights[i].color;
+      annotation += rightMark + ' ';
+    }
+    return annotation.length;
+}
+
 function yawas_delete_highlight() {
   let elem = hoverElementOrSelection();
   if (elem)
   {
-    sendMessage({action: "delete_highlight", highlightString: elem.dataset.selection, n:elem.dataset.yawasOccurence });
+    sendMessage({action: "delete_highlight", highlightString: elem.dataset.selection, n:elem.dataset.yawasOccurence }, function (res)
+    {
+      if (res && res.highlights)
+        setCharactersLeft(computeLength(res.highlights));
+    });
     childrenToo(elem,null);
     var f = document.createDocumentFragment();
     while(elem.firstChild)

@@ -334,6 +334,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
     if (couleur != 'yellow')
         webAnnotation += '#' + couleur;
     webAnnotation += rightMark + " ";
+    let pureLen = webAnnotation.length;
     if (webAnnotation.length > 2048)
     {
     	console.log('too long so compacting annotations',qurl,webAnnotation.length);
@@ -358,7 +359,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
        chrome.browserAction.setTitle({title:'Yawas'});
        urls[qurl] = nannotations;
        cachedAnnotations[qurl] = webAnnotation;
-       return cb({addedhighlight:true});
+       return cb({addedhighlight:true,pureLen:pureLen});
      }
      else
      {
@@ -740,7 +741,7 @@ function updateHighlight(fragment, occurence, newcolor, comment, url, title,page
           webLabels = '';
       //cachedAnnotations[qurl] = webAnnotation;
       if (webAnnotation.length > 2048)
-        return cb({error:'too long'});
+        return cb({error:'too long',toobig:true});
       yawas_storeHighlightsNow(url, title, webLabels, webAnnotation, googleSignature, function (res){
         if (res.ok)
         {

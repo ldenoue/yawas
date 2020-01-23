@@ -2,7 +2,7 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 2,
-  "version": "7.2.5",
+  "version": "7.2.6",
   "description": "Highlight Web pages; stored online and recreated automatically when you revisit a page",
   "background": {"scripts": ["yawas-background.js"]},
   "content_scripts": [
@@ -13,7 +13,7 @@
       "all_frames": true
     }
   ],
-  "permissions": ["https://www.google.com/bookmarks/*","storage","contextMenus"],
+  "permissions": ["https://www.google.com/bookmarks/*","storage","contextMenus","tabs"],
   "browser_action": {
 		"default_title": "Yawas",
   	"default_icon": "yawas_on_128.png",

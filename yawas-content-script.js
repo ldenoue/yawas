@@ -132,7 +132,6 @@ function purifyURL(href)
 function yawas_getGoodUrl(doc)//,url)
 {
     var url = null;
-    //console.log('yawas_getGoodUrl',doc,doc.location,doc.location.href);
     if (doc && doc.location && doc.location.hostname.indexOf('readability.com') !== -1)
     {
         var origin = doc.querySelector('.entry-origin a');
@@ -731,7 +730,7 @@ function updateHighlight(elt,color,newcomment)
 {
     if (elt)
     {
-        sendMessage({action: "recolor_highlight", highlightString: hoverElement.dataset.selection, n:hoverElement.dataset.yawasOccurence, newcolor: color, comment:newcomment}, function (res){
+        sendMessage({action: "recolor_highlight", url: yawas_getGoodUrl(document), title: document.title, highlightString: hoverElement.dataset.selection, n:hoverElement.dataset.yawasOccurence, newcolor: color, comment:newcomment}, function (res){
           if (res.error)
           {
             //console.error(res);
@@ -747,35 +746,6 @@ function updateHighlight(elt,color,newcomment)
         });
     }
 }
-
-// replaced with commands inside manifest.json
-// so users can customize their shortcuts
-
-/*const codes = [89,82,66,71,68,67];
-
-function keyListener(e)
-{
-  if (e.ctrlKey && e.keyCode && e.shiftKey) {
-    var stop = codes.indexOf(e.keyCode) !== -1;
-    if (stop)
-    {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (e.keyCode === 89)
-      yawas_chrome('yellow');
-    else if (e.keyCode === 82)
-      yawas_chrome('red');
-    else if (e.keyCode === 66)
-      yawas_chrome('blue');
-    else if (e.keyCode === 67)
-      yawas_chrome('note');
-    else if (e.keyCode === 71) // Green
-      yawas_chrome('green');
-    else if (e.keyCode === 68)
-      yawas_delete_highlight();
-  }
-}*/
 
 function hoverElementOrSelection() {
   if (hoverElement !== null)
@@ -817,7 +787,7 @@ function yawas_delete_highlight() {
   let elem = hoverElementOrSelection();
   if (elem)
   {
-    sendMessage({action: "delete_highlight", highlightString: elem.dataset.selection, n:elem.dataset.yawasOccurence }, function (res)
+    sendMessage({action: "delete_highlight", url: yawas_getGoodUrl(document), title: document.title, highlightString: elem.dataset.selection, n:elem.dataset.yawasOccurence }, function (res)
     {
       if (res && res.highlights)
         setCharactersLeft(computeLength(res.highlights));

@@ -457,12 +457,11 @@ function copyTextToClipboard(text) {
   copyFrom.select();
   document.execCommand('copy');
   body.removeChild(copyFrom);
-  alert('Highlights are in your clipboard');
+  //alert('Highlights are in your clipboard');
 }
 
 function yawas_copyclipboard(url,title)
 {
-    //console.log('yawas_copyclipboard',url,title);
     url = purifyURL(url);
     if (title.trim().length == 0)
         title = 'no title';
@@ -480,7 +479,6 @@ function yawas_copyclipboard(url,title)
 
 function yawas_email(url,title)
 {
-    console.log('yawas_email',url,title);
     url = purifyURL(url);
     if (title.trim().length == 0)
         title = 'no title';
@@ -494,12 +492,12 @@ function yawas_email(url,title)
       body += '<<' + highlights[i].selection + '>>\n';
     }
     var compose = "https://mail.google.com/mail/?extsrc=mailto&url=" + encodeURIComponent("mailto:?subject=" + title + "&body=" + body);
-    var width = Math.min(screen.width-40,640);
+    /*var width = Math.min(screen.width-40,640);
     var height = Math.min(screen.height-40,480);
     var left = Math.floor( (screen.width - width) / 2);
     var top = Math.floor( (screen.height - height) / 2);
-    //alert(compose);
-    window.open(compose,'email_popup','left='+left+',top='+top+',height='+height+'px,width='+width+'px,resizable=1');
+    window.open(compose,'email_popup','left='+left+',top='+top+',height='+height+'px,width='+width+'px,resizable=1');*/
+    chrome.tabs.create({url:compose});
 }
 
 // deprecated in Chrome and does not work in Firefox
@@ -523,7 +521,6 @@ function getEmailHandler()
     return function(info, tab) {
         var url = isPDF(tab.url);
         var title = tab.title;
-        //alert('calling with url='+url+'-'+title);
         yawas_email(url,title);
     };
 }
@@ -628,10 +625,9 @@ function annotationToArray(annotations)
 
 function requestCallback(request, sender, sendResponse)
 {
-  var tabTitle = sender.tab.title;
-  var tabURL = purifyURL(sender.tab.url);
-  
-  //console.log(tabURL,sender.tab.id);
+  var tabURL = purifyURL(request.url);
+  var tabTitle = request.title;
+  //console.log('requestCallback',request);
   if (request.fn === 'yawas_getAnnotations')
   {
     yawas_getAnnotations(request.url,function(res){
@@ -844,8 +840,7 @@ function isPDF(href)
 }
 function getEditHandler() {
   return function(info, tab) {
-    let possiblePDFUrl = isPDF(tab.url);
-    //sendMessageActiveTab({action:'yawas_chrome_edit'});
+    let possiblePDFUrl = isPDF(info.pageUrl);
     if (saveLocally)
       chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + purifyURL(possiblePDFUrl))});
     else

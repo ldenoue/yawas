@@ -13,6 +13,8 @@ var saveLocally = false;
 var donate_url = 'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=chromeextension';
 var googleSignature = null;
 
+chrome.runtime.onMessage.addListener(requestCallback);
+
 chrome.storage.sync.get({
     handlePDF: false,
     saveLocally: false,
@@ -242,8 +244,13 @@ function sendMessageActiveTab(json)
     if (tabs && tabs.length > 0)
     {    
       var tab = tabs[0];
-      //console.log(tab,json);
-      chrome.tabs.sendMessage(tab.id, json, function(response) {});
+      //chrome.tabs.sendMessage(tab.id, json, function(response) {});
+      const port = chrome.tabs.connect(tab.id);
+      port.onDisconnect = function (err) { console.error('disconnected',err)};
+      /*port.onMessage.addListener((response) => {
+        console.error('port.onMessage response=',response);
+      });*/
+      port.postMessage(json);
     }
   });
 }
@@ -689,8 +696,6 @@ function requestCallback(request, sender, sendResponse)
   return true;
 
 }
-
-chrome.runtime.onMessage.addListener(requestCallback);
 
 function updateHighlight(fragment, occurence, newcolor, comment, url, title,pagenumber,cb)
 {

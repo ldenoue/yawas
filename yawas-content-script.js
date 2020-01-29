@@ -19,6 +19,44 @@ var INSTAPAPER_PREFIX  = "http://www.instapaper.com/text?u="
 var VIEWTEXT_PREFIX  = "http://viewtext.org/article?url="
 var READABILITY_PREFIX  = "http://www.readability.com/m?url="
 
+function contentScriptRequestCallback(request, sender, sendResponse) {
+  //console.error('contentScriptRequestCallback',request);
+  if (request.action)
+  {
+    if (request.action === 'signedin')
+    {
+      if (!signedin)
+      {
+        signedin = true; // this avoids loops: we declare we're signed first
+        if (highlightswrapper)
+        {
+          setHighlightCaption('Yawas ➜ Refresh to view annotations');
+          highlightswrapper.style.display = 'block';
+        }
+      }
+    }
+    else if (request.action === 'yawas_next_highlight')
+      yawas_next_highlight();
+    else if (request.action === 'yawas_chrome')
+      yawas_chrome(request.color);
+    else if (request.action === 'yawas_delete_highlight')
+      yawas_delete_highlight();
+  }
+  if (sendResponse)
+  {
+    //console.log('sending response to background page');
+    sendResponse({reponse:'ok'});
+  }
+  return true; // important in case we need sendResponse asynchronously
+}
+
+//chrome.runtime.onMessage.addListener(contentScriptRequestCallback);
+chrome.runtime.onConnect.addListener((port) => {
+  //console.log('onconnect to port',port);
+  port.onMessage.addListener(contentScriptRequestCallback);
+});
+
+
 function stripMobilizer(url)
 {
     var i = url.indexOf(VIEWTEXT_PREFIX);
@@ -211,38 +249,6 @@ function yawas_signin()
     var top = Math.floor( (screen.height - height) / 2);
     window.open('https://www.google.com/accounts/ServiceLogin?service=toolbar&nui=1&hl=en&continue=http%3A%2F%2Ftoolbar.google.com%2Fcommand%3Fclose_browser','bkmk_popup','left='+left+',top='+top+',height='+height+'px,width='+width+'px,resizable=1');
 }
-
-function requestCallback(request, sender, sendResponse) {
-  if (request.action)
-  {
-    if (request.action === 'signedin')
-    {
-      if (!signedin)
-      {
-        signedin = true; // this avoids loops: we declare we're signed first
-        if (highlightswrapper)
-        {
-          setHighlightCaption('Yawas ➜ Refresh to view annotations');
-          highlightswrapper.style.display = 'block';
-        }
-      }
-    }
-    else if (request.action === 'yawas_next_highlight')
-      yawas_next_highlight();
-    else if (request.action === 'yawas_chrome')
-      yawas_chrome(request.color);
-    else if (request.action === 'yawas_delete_highlight')
-      yawas_delete_highlight();
-    //else if (request.action === 'yawas_chrome_search')
-    //  yawas_chrome_search();
-    //else if (request.action === 'yawas_chrome_edit')
-    //  yawas_chrome_edit();
-  }
-  sendResponse({ok:true});
-  return true; // important in case we need sendResponse asynchronously
-}
-
-chrome.runtime.onMessage.addListener(requestCallback);
 
 function isSavingLocally(cb)
 {
@@ -486,13 +492,10 @@ function rangeIntersectsNode(range, node) {
 
 function sendMessage(info,cb)
 {
-  //console.log('sendMessage',info);
   try {
     chrome.runtime.sendMessage(info, function response(res) {
       if (cb)
         cb(res);
-      //else
-      //  console.log('sendMessage',info,res);
     });
   } catch(e)
   {
@@ -950,6 +953,7 @@ function yawas_next_highlight()
 window.onhashchange = function (evt) {
   askForAnnotations(2000);
 };
+
 if (document.location.hostname === 'toolbar.google.com' && document.location.pathname === '/command' && document.location.search && document.location.search.indexOf('close_browser') !== -1)
 {
     window.close();

@@ -662,13 +662,7 @@ function highlightDoc(wnd,doc,highlights)
 
 function highlightNowFirefox22(selectionrng,color,textcolor,doc, selectionstring,occurence,comment)
 {
-    var body = doc.body;
-    if (!body)
-    {
-        return null;
-    }
-    
-    var baseNode = doc.createElement("yawas");//span was changing styling on some web pages
+    let baseNode = doc.createElement("yawas");//span was changing styling on some web pages
     baseNode.className = 'yawas-highlight';
     baseNode.style.backgroundColor = googleColors[color];
     if (comment && comment > '')
@@ -682,7 +676,7 @@ function highlightNowFirefox22(selectionrng,color,textcolor,doc, selectionstring
     baseNode.dataset.yawasOccurence = occurence;
     baseNode.dataset.yawasColor = googleColors[color];
 
-    var node = yawas_highlight222(selectionrng, baseNode, googleColors[color]);
+    let node = yawas_highlight222(selectionrng, baseNode, googleColors[color]);
     
     node.addEventListener('mouseover',function (e) {
       hoverElement = this;
@@ -968,7 +962,7 @@ else
     //window.addEventListener("keydown", keyListener, false);
     if (window.top !== window)
     {
-        //console.error('cookkie_handler not calling getannotations because not top window');
+        console.error('cookkie_handler not calling getannotations because not top window');
     }
     else
     {

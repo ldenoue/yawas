@@ -2,14 +2,14 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 2,
-  "version": "7.2.8",
+  "version": "7.2.9",
   "description": "Highlight Web pages; stored online and recreated automatically when you revisit a page",
   "background": {"scripts": ["yawas-background.js"]},
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
       "exclude_matches": ["*://*.slack.com/*","*://web.whatsapp.com/*","*://www.google.com/bookmarks/*","*://accounts.google.com/*"],
-      "js": ["yawas-content-script.js"],
+      "js": ["Action.js","yawas-content-script.js"],
       "all_frames": true
     }
   ],

@@ -15,9 +15,13 @@ googleColors['red'] = '#ff9999';
 googleColors['green'] = '#99ff99';
 googleColors['white'] = 'transparent';
 var notRemapped = [];
-var INSTAPAPER_PREFIX  = "http://www.instapaper.com/text?u="
-var VIEWTEXT_PREFIX  = "http://viewtext.org/article?url="
-var READABILITY_PREFIX  = "http://www.readability.com/m?url="
+
+/*function addScript(src)
+{
+  let scriptElm = document.createElement('script');
+  scriptElm.src = src;
+  document.body.appendChild(scriptElm);
+}*/
 
 function contentScriptRequestCallback(request, sender, sendResponse) {
   //console.error('contentScriptRequestCallback',request);
@@ -55,24 +59,6 @@ chrome.runtime.onConnect.addListener((port) => {
   //console.log('onconnect to port',port);
   port.onMessage.addListener(contentScriptRequestCallback);
 });
-
-
-function stripMobilizer(url)
-{
-    var i = url.indexOf(VIEWTEXT_PREFIX);
-    if (i == 0)
-        return decodeURIComponent(url.substring(VIEWTEXT_PREFIX.length));
-    
-    i =  url.indexOf(INSTAPAPER_PREFIX);
-    if (i == 0)
-        return decodeURIComponent(url.substring(INSTAPAPER_PREFIX.length));
-    
-    i = url.indexOf(READABILITY_PREFIX);
-    if (i == 0)
-        return decodeURIComponent(url.substring(READABILITY_PREFIX.length));
-    
-    return url;
-}
 
 let charactersUsed = 0;
 function setCharactersLeft(txt)
@@ -145,7 +131,7 @@ function purifyURL(href)
 {
     if (href && href.indexOf('https://mail.google') === 0)
       return href;
-    var url = stripMobilizer(href);
+    var url = href;
     var pos = url.indexOf('#');
     if (pos > 0)
         url = url.substring(0,pos);
@@ -178,7 +164,7 @@ function yawas_getGoodUrl(doc)//,url)
     }
     if (!url)
         url = doc.location.href;
-    
+
     if (url.indexOf("q=cache:") > 0)
     {
         try {
@@ -293,7 +279,7 @@ function addHighlightsWrapper()
     highlightswrapper.textContent = '';
     highlightswrapper.style.textAlign = 'center';
     //highlightswrapper.style.cursor = 'pointer';
-    
+
     highlightswrapper.style.fontSize = '14px';
     highlightswrapper.style.fontWeight = 'bold';
     highlightswrapper.style.color = 'black';
@@ -301,7 +287,7 @@ function addHighlightsWrapper()
     highlightswrapper.style.borderRadius = '32px';
     highlightswrapper.style.padding = '8px 16px';
     //highlightswrapper.textContent = '';
-    
+
     var highlightcaption = document.createElement('div');
     highlightcaption.addEventListener('click',yawas_next_highlight);
     highlightcaption.title = 'Click to navigate in highlights';
@@ -309,7 +295,7 @@ function addHighlightsWrapper()
     highlightcaption.style.cursor = 'pointer';
     highlightcaption.textContent = '';
     highlightswrapper.appendChild(highlightcaption);
-    
+
     var highlightsnotfound = document.createElement('div');
     highlightsnotfound.style.color = '#a22';
     highlightsnotfound.style.cursor = 'pointer';
@@ -323,7 +309,7 @@ function addHighlightsWrapper()
     highlightsnotfoundtext.style.display = 'none';
     highlightsnotfoundtext.id = 'highlightsnotfoundtext';
     highlightswrapper.appendChild(highlightsnotfoundtext);
-    
+
     var charactersleft = document.createElement('div');
     charactersleft.style.color = '#000';
     charactersleft.style.fontSize = '11px';
@@ -334,7 +320,42 @@ function addHighlightsWrapper()
     charactersleft.id = 'charactersleft';
     highlightswrapper.appendChild(charactersleft);
 
-    
+    let readerView = document.createElement('button');
+    readerView.textContent = 'ReaderView';
+    readerView.addEventListener('click',function () {
+      let div = document.querySelector('#yawas-readerview');
+      if (!div)
+      {
+        readerShown = true;
+        div = document.createElement('div');
+        div.id = 'yawas-readerview';
+        document.body.style.overflow = 'hidden';
+        document.body.appendChild(div);
+        addStyle(document,readerStyle);
+
+        var ExtensionPreprocessingJS = new LoloAction;
+        var params = {
+            completionFunction: function (res) {
+              if (res.error)
+                div.innerHTML = res.error;
+              else
+                div.innerHTML = `<div id='articlebody'>${res.fulltext}</div>`;
+                /*div.querySelectorAll('*').forEach((item, i) => {
+                  item.removeAttribute('class');
+                });*/
+            }
+        };
+        ExtensionPreprocessingJS.run(params);
+      }
+      else {
+        document.body.style.overflow = 'auto';
+        div.parentNode.removeChild(div);
+      }
+
+    },false);
+    highlightswrapper.appendChild(readerView);
+
+
     document.body.appendChild(highlightswrapper);
   }
 }
@@ -484,7 +505,7 @@ function rangeIntersectsNode(range, node) {
         } catch (e) {
             nodeRange.selectNodeContents(node);
         }
-        
+
         return range.compareBoundaryPoints(Range.END_TO_START, nodeRange) == -1 &&
         range.compareBoundaryPoints(Range.START_TO_END, nodeRange) == 1;
     }
@@ -677,7 +698,7 @@ function highlightNowFirefox22(selectionrng,color,textcolor,doc, selectionstring
     baseNode.dataset.yawasColor = googleColors[color];
 
     let node = yawas_highlight222(selectionrng, baseNode, googleColors[color]);
-    
+
     node.addEventListener('mouseover',function (e) {
       hoverElement = this;
     },false);
@@ -752,7 +773,7 @@ function hoverElementOrSelection() {
     return null;
   let rng = wndWithSelection.getSelection().getRangeAt(0);
   let elems = document.querySelectorAll('.yawas-highlight');
-  
+
   for (let i=0;i<elems.length;i++)
   {
     if (rangeIntersectsNode(rng,elems[i].firstChild))
@@ -928,7 +949,7 @@ function yawas_next_highlight()
 {
   if (!signedin)
     return yawas_signin();
-    
+
     var highlights = document.getElementsByClassName('yawas-highlight');
     if (highlights.length==0)
         return;
@@ -962,13 +983,30 @@ else
     //window.addEventListener("keydown", keyListener, false);
     if (window.top !== window)
     {
-        console.error('cookkie_handler not calling getannotations because not top window');
+        //console.error('cookkie_handler not calling getannotations because not top window');
     }
     else
     {
+        //addScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.0.272/jspdf.debug.js");
         addHighlightsWrapper();
         addStyle(window.document,'.yawas-highlight:hover{opacity:0.6;}.yawas-highlight[data-comment]{border-bottom:1px dashed black}');
         askForAnnotations(2000);
+        /*setTimeout(function () {
+          var documentClone = document.cloneNode(true);
+          var article = new Readability(documentClone).parse();
+          //console.log(article.content);
+          if (article && article.content)
+          {
+            let div = document.createElement('div');
+            div.innerHTML = article.content;
+            document.body.appendChild(div);
+            var pdf = new jsPDF('p', 'pt', 'letter');
+            pdf.html(div,{callback: function (pdf) {
+              pdf.save('test.pdf');
+              div.parentElement.removeChild(div);
+            }});
+          }
+        },4000);*/
     }
     var elems = document.querySelectorAll('*');
     for (var i=0;i<elems.length;i++)

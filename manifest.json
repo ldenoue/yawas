@@ -9,7 +9,7 @@
     {
       "matches": ["http://*/*", "https://*/*"],
       "exclude_matches": ["*://*.slack.com/*","*://web.whatsapp.com/*","*://www.google.com/bookmarks/*","*://accounts.google.com/*"],
-      "js": ["Action.js","yawas-content-script.js"],
+      "js": ["yawas-content-script.js"],
       "all_frames": true
     }
   ],

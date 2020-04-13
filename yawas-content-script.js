@@ -16,13 +16,6 @@ googleColors['green'] = '#99ff99';
 googleColors['white'] = 'transparent';
 var notRemapped = [];
 
-/*function addScript(src)
-{
-  let scriptElm = document.createElement('script');
-  scriptElm.src = src;
-  document.body.appendChild(scriptElm);
-}*/
-
 function contentScriptRequestCallback(request, sender, sendResponse) {
   //console.error('contentScriptRequestCallback',request);
   if (request.action)
@@ -319,43 +312,6 @@ function addHighlightsWrapper()
     charactersleft.style.display = 'block';
     charactersleft.id = 'charactersleft';
     highlightswrapper.appendChild(charactersleft);
-
-    let readerView = document.createElement('button');
-    readerView.textContent = 'ReaderView';
-    readerView.addEventListener('click',function () {
-      let div = document.querySelector('#yawas-readerview');
-      if (!div)
-      {
-        readerShown = true;
-        div = document.createElement('div');
-        div.id = 'yawas-readerview';
-        document.body.style.overflow = 'hidden';
-        document.body.appendChild(div);
-        addStyle(document,readerStyle);
-
-        var ExtensionPreprocessingJS = new LoloAction;
-        var params = {
-            completionFunction: function (res) {
-              if (res.error)
-                div.innerHTML = res.error;
-              else
-                div.innerHTML = `<div id='articlebody'>${res.fulltext}</div>`;
-                /*div.querySelectorAll('*').forEach((item, i) => {
-                  item.removeAttribute('class');
-                });*/
-            }
-        };
-        ExtensionPreprocessingJS.run(params);
-      }
-      else {
-        document.body.style.overflow = 'auto';
-        div.parentNode.removeChild(div);
-      }
-
-    },false);
-    highlightswrapper.appendChild(readerView);
-
-
     document.body.appendChild(highlightswrapper);
   }
 }

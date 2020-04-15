@@ -54,15 +54,15 @@ function stripMobilizer(url)
     var i = url.indexOf(VIEWTEXT_PREFIX);
     if (i == 0)
         return decodeURIComponent(url.substring(VIEWTEXT_PREFIX.length));
-    
+
     i =  url.indexOf(INSTAPAPER_PREFIX);
     if (i == 0)
         return decodeURIComponent(url.substring(INSTAPAPER_PREFIX.length));
-    
+
     i = url.indexOf(READABILITY_PREFIX);
     if (i == 0)
         return decodeURIComponent(url.substring(READABILITY_PREFIX.length));
-    
+
     return url;
 }
 
@@ -242,7 +242,7 @@ function sendMessageActiveTab(json)
 {
   chrome.tabs.query({active:true,currentWindow: true}, function(tabs) {
     if (tabs && tabs.length > 0)
-    {    
+    {
       var tab = tabs[0];
       //chrome.tabs.sendMessage(tab.id, json, function(response) {});
       const port = chrome.tabs.connect(tab.id);
@@ -313,7 +313,7 @@ function yawas_compact(webAnnotation)
 function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumber,cb)
 {
     var qurl = purifyURL(webUrl);
-    
+
     // new version uses cache and google signature
     var webAnnotation = cachedAnnotations[qurl];
     var webLabels = cachedLabels[qurl];
@@ -691,7 +691,7 @@ function requestCallback(request, sender, sendResponse)
     updateHighlight(request.highlightString,request.n,request.newcolor,'',request.url,request.title,request.p,function(res){
       sendResponse(res);
     });
-    
+
   // important: we want to use sendResponse asynchronously sometimes (e.g. fetching annotations using XHR)
   return true;
 
@@ -710,7 +710,7 @@ function updateHighlight(fragment, occurence, newcolor, comment, url, title,page
     {
         return cb({error:'no annotation found'});
     }
-    
+
     var highlights = annotationToArray(webAnnotation);
     var idx = -1;
     for (var i=0;i<highlights.length;i++)
@@ -754,7 +754,7 @@ function updateHighlight(fragment, occurence, newcolor, comment, url, title,page
           cb(res);
       });
     }
-    
+
 }
 
 function delHighlightNow(fragment,occurence,url,title,pagenumber,cb)
@@ -765,7 +765,7 @@ function delHighlightNow(fragment,occurence,url,title,pagenumber,cb)
     {
         return cb({error:'no annotation found'});
     }
-    
+
     var highlights = annotationToArray(webAnnotation);
     var idx = -1;
     for (var i=0;i<highlights.length;i++)
@@ -936,7 +936,7 @@ chrome.contextMenus.create({
                            "contexts" : ["page"],
                            "onclick" : getEditHandler()
                            });
-                           
+
 chrome.commands.onCommand.addListener(function(command) {
   if (command === 'yawas-yellow')
     sendMessageActiveTab({action:'yawas_chrome',color:'yellow'});
@@ -951,7 +951,7 @@ chrome.commands.onCommand.addListener(function(command) {
   else if (command === 'yawas-note')
     sendMessageActiveTab({action:'yawas_chrome',color:'note'});
 });
-                           
+
 function purifyURL(href)
 {
   if (href && href.indexOf('https://mail.google') === 0)

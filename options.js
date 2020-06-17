@@ -29,14 +29,14 @@ function restoreOptions() {
   });
 }
 
-function donateOptions() {
+/*function donateOptions() {
     chrome.tabs.create({ url: 'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=yawasextension' });
-}
+}*/
 
 document.addEventListener('DOMContentLoaded', loadOptions);
 //document.querySelector('#save').addEventListener('click', saveOptions);
 document.querySelector('#restore').addEventListener('click', restoreOptions);
-document.querySelector('#donate').addEventListener('click', donateOptions);
+//document.querySelector('#donate').addEventListener('click', donateOptions);
 
 //let handlePDFElem = document.getElementById("handlePDF");
 let saveLocallyElem = document.getElementById("saveLocally");

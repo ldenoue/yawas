@@ -10,7 +10,7 @@ var rightMark = '>>';//'&rdquo;'
 var lenQuote = rightMark.length;
 var handlePDF = false;
 var saveLocally = false;
-var donate_url = 'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=chromeextension';
+//var donate_url = 'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=chromeextension';
 var googleSignature = null;
 
 chrome.runtime.onMessage.addListener(requestCallback);
@@ -642,11 +642,11 @@ function requestCallback(request, sender, sendResponse)
       sendResponse(res);
     });
   }
-  else if (request.fn === 'yawas_donate')
+  /*else if (request.fn === 'yawas_donate')
   {
     chrome.tabs.create({ url: donate_url });
     sendResponse({});
-  }
+  }*/
   else if (request.fn === 'yawas_toolbar_signed_in')
   {
     signedin = true;
@@ -815,11 +815,11 @@ function delHighlightNow(fragment,occurence,url,title,pagenumber,cb)
 }
 
 
-function getDonateHandler() {
+/*function getDonateHandler() {
     return function(info, tab) {
         chrome.tabs.create({ url: donate_url});
     };
-}
+}*/
 
 function getDeleteHandler() {
     return function(info, tab) {
@@ -853,13 +853,13 @@ function getEditHandler() {
   };
 }
 
-chrome.contextMenus.create({
+/*chrome.contextMenus.create({
                            "id" : "donate",
                            "title" : "Donate💰",
                            "type" : "normal",
                            "contexts" : ["selection","page"],
                            "onclick" : getDonateHandler()
-                           });
+                         });*/
 
 chrome.contextMenus.create({
                            "id" : "yellow",

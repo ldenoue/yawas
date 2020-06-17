@@ -2,7 +2,7 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 2,
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "Highlight Web pages; stored online and recreated automatically when you revisit a page",
   "background": {"scripts": ["yawas-background.js"]},
   "content_scripts": [
@@ -27,28 +27,28 @@
     "yawas-yellow": {
       "suggested_key": {
         "default": "Ctrl+Shift+Y",
-        "mac": "MacCtrl+Shift+Y"
+        "mac": "Alt+Shift+Y"
       },
       "description": "Yawas Yellow"
     },
     "yawas-red": {
       "suggested_key": {
         "default": "Ctrl+Shift+R",
-        "mac": "MacCtrl+Shift+R"
+        "mac": "Alt+Shift+R"
       },
       "description": "Yawas Red"
     },
     "yawas-blue": {
       "suggested_key": {
         "default": "Ctrl+Shift+B",
-        "mac": "MacCtrl+Shift+B"
+        "mac": "Alt+Shift+B"
       },
       "description": "Yawas Blue"
     },
     "yawas-green": {
       "suggested_key": {
         "default": "Ctrl+Shift+G",
-        "mac": "MacCtrl+Shift+G"
+        "mac": "Alt+Shift+G"
       },
       "description": "Yawas Green"
     }

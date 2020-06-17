@@ -67,7 +67,7 @@ function setHighlightCaption(txt)
     highlightswrapper.querySelector('#highlightcaption').textContent = txt;
 }
 
-function showNotFound()
+function showNotFound(evt)
 {
   if (highlightsnotfoundtext.style.display === 'none')
   {
@@ -262,6 +262,7 @@ function addHighlightsWrapper()
     highlightswrapper.style.position = 'fixed';
     highlightswrapper.style.zIndex = 200000;
     highlightswrapper.style.margin = '0px';
+    highlightswrapper.style.userSelect = 'none';
     highlightswrapper.style.fontFamily = '"avenir next",Helvetica';
     highlightswrapper.style.right = '8px';
     highlightswrapper.style.bottom = '8px';
@@ -277,7 +278,7 @@ function addHighlightsWrapper()
     highlightswrapper.style.fontWeight = 'bold';
     highlightswrapper.style.color = 'black';
     highlightswrapper.style.backgroundColor = '#8a8';
-    highlightswrapper.style.borderRadius = '32px';
+    //highlightswrapper.style.borderRadius = '32px';
     highlightswrapper.style.padding = '8px 16px';
     //highlightswrapper.textContent = '';
 
@@ -312,6 +313,18 @@ function addHighlightsWrapper()
     charactersleft.style.display = 'block';
     charactersleft.id = 'charactersleft';
     highlightswrapper.appendChild(charactersleft);
+
+    var close = document.createElement('div');
+    close.textContent = '✕';
+    close.style.position = 'absolute';
+    close.style.top = 0;
+    close.style.right = 0;
+    close.style.fontSize = '12px'
+    close.style.padding = '2px';
+    close.style.color = 'black';
+    close.style.cursor = 'pointer'
+    close.addEventListener('click',function() { highlightswrapper.style.display ='none'},false);
+    highlightswrapper.appendChild(close);
     document.body.appendChild(highlightswrapper);
   }
 }
@@ -807,7 +820,7 @@ function yawas_chrome_edit()
 
 var currentHighlight = 0;
 
-function showDonateButton()
+/*function showDonateButton()
 {
     var donatewrapper = document.createElement('div');
     donatewrapper.style.position = 'fixed';
@@ -892,7 +905,7 @@ function showDonateButton()
     donatewrapper.appendChild(close);
     document.body.appendChild(donatewrapper);
     setTimeout(function () { donatewrapper.style.opacity = 1; donatewrapper.style.transform = 'translateY(0)';},2000);
-}
+}*/
 
 function addStyle(doc,css)
 {

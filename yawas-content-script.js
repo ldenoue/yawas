@@ -16,6 +16,52 @@ googleColors['green'] = '#99ff99';
 googleColors['white'] = 'transparent';
 var notRemapped = [];
 
+function dragElement(div)
+{
+  let draggedDiv = div;
+  let left = 0;
+  let top = 0;
+  draggedDiv.querySelector('#dragheader').addEventListener('mousedown',dragMouseDown);
+
+  function dragMouseDown(e)
+  {
+      e.preventDefault();
+      let rect = draggedDiv.getBoundingClientRect();
+      left = e.clientX - rect.left;
+      top = e.clientY - rect.top;
+      document.addEventListener('mouseup',closeDragElement);
+      document.addEventListener('mousemove',elementDrag);
+  };
+
+  function elementDrag(e)
+  {
+      e.preventDefault();
+      let x = e.clientX;
+      let y = e.clientY;
+      draggedDiv.style.right = 'unset';
+      draggedDiv.style.bottom = 'unset';
+      let draggedWidth = draggedDiv.offsetWidth + 24;
+      let draggedHeight = draggedDiv.offsetHeight + 8;
+      let newleft = (x - left);
+      let newtop = (y - top);
+      if (newleft < 8)
+          newleft = 8;
+      if (newleft > window.innerWidth - draggedWidth)
+          newleft = window.innerWidth - draggedWidth;
+      if (newtop < 8)
+          newtop = 8;
+      if (newtop > window.innerHeight - draggedHeight)
+          newtop = window.innerHeight - draggedHeight;
+      draggedDiv.style.left = newleft + 'px';
+      draggedDiv.style.top = newtop + 'px';
+  };
+  function closeDragElement(e)
+  {
+      document.removeEventListener('mouseup',closeDragElement);
+      document.removeEventListener('mousemove',elementDrag);
+  }
+}
+
 function contentScriptRequestCallback(request, sender, sendResponse) {
   //console.error('contentScriptRequestCallback',request);
   if (request.action)
@@ -282,6 +328,14 @@ function addHighlightsWrapper()
     highlightswrapper.style.padding = '8px 16px';
     //highlightswrapper.textContent = '';
 
+    let dragheader = document.createElement('div');
+    dragheader.id = 'dragheader';
+    dragheader.style.textAlign = 'center';
+    dragheader.style.cursor = 'move';
+    dragheader.style.fontSize = '16px';
+    dragheader.style.color = '#ccc';
+    dragheader.textContent = 'Yawas';
+    highlightswrapper.appendChild(dragheader);
     var highlightcaption = document.createElement('div');
     highlightcaption.addEventListener('click',yawas_next_highlight);
     highlightcaption.title = 'Click to navigate in highlights';
@@ -314,18 +368,19 @@ function addHighlightsWrapper()
     charactersleft.id = 'charactersleft';
     highlightswrapper.appendChild(charactersleft);
 
-    var close = document.createElement('div');
+    let close = document.createElement('div');
     close.textContent = '✕';
     close.style.position = 'absolute';
     close.style.top = 0;
     close.style.right = 0;
     close.style.fontSize = '12px'
-    close.style.padding = '2px';
-    close.style.color = 'black';
+    close.style.padding = '4px';
+    close.style.color = '#ccc';
     close.style.cursor = 'pointer'
     close.addEventListener('click',function() { highlightswrapper.style.display ='none'},false);
     highlightswrapper.appendChild(close);
     document.body.appendChild(highlightswrapper);
+    dragElement(highlightswrapper);
   }
 }
 

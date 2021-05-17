@@ -142,7 +142,9 @@ function yawas_getAnnotations(webUrl,cb)
     googleSignature = null; // invalidate signature
 
     webUrl = purifyURL(webUrl);
-    var url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
+    //var url = "https://www.google.com/bookmarks/find?output=rss&q=" + encodeURIComponent(webUrl);
+    // escape fixes issue https://github.com/ldenoue/yawas/issues/11 because url had ' in it
+    var url = "https://www.google.com/bookmarks/find?output=rss&q=" + escape(webUrl);
     var xhr = new XMLHttpRequest();
     //xhr.withCredentials = true;
     abortTimerId = window.setTimeout(function() {

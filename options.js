@@ -1,19 +1,23 @@
 function loadOptions() {
   chrome.storage.sync.get({
     /*handlePDF: false,*/
-    saveLocally: false
+    saveLocally: false,
+    saveChromeBookmarks: true
   }, function(items) {
     //document.getElementById('handlePDF').checked = items.handlePDF;
     document.getElementById('saveLocally').checked = items.saveLocally;
+    document.getElementById('saveChromeBookmarks').checked = items.saveChromeBookmarks;
   });
 }
 
 function saveOptions() {
   //var handlePDF = document.getElementById("handlePDF").checked;
   var saveLocally = document.getElementById("saveLocally").checked;
+  var saveChromeBookmarks = document.getElementById("saveChromeBookmarks").checked;
   chrome.storage.sync.set({
     /*handlePDF: handlePDF,*/
-    saveLocally:saveLocally
+    saveLocally:saveLocally,
+    saveChromeBookmarks:saveChromeBookmarks
   }, function() {
     //window.close();
   });
@@ -22,10 +26,12 @@ function saveOptions() {
 function restoreOptions() {
   chrome.storage.sync.set({
     /*handlePDF: false,*/
-    saveLocally: false
+    saveLocally: false,
+    saveChromeBookmarks: true
   }, function() {
     //document.getElementById("handlePDF").checked = false;
     document.getElementById('saveLocally').checked = false;
+    document.getElementById('saveChromeBookmarks').checked = true;
   });
 }
 
@@ -39,6 +45,16 @@ document.querySelector('#restore').addEventListener('click', restoreOptions);
 //document.querySelector('#donate').addEventListener('click', donateOptions);
 
 //let handlePDFElem = document.getElementById("handlePDF");
-let saveLocallyElem = document.getElementById("saveLocally");
 //handlePDFElem.addEventListener('change',saveOptions);
+let saveLocallyElem = document.getElementById("saveLocally");
 saveLocallyElem.addEventListener('change',saveOptions);
+let saveChromeBookmarksElem = document.getElementById("saveChromeBookmarks");
+saveChromeBookmarksElem.addEventListener('change',saveOptions);
+
+let importButton = document.getElementById('importChromeBookmarks');
+importButton.addEventListener('click', () => chrome.runtime.sendMessage({ msg: "startImportFunc" }));
+
+chrome.runtime.onMessage.addListener(function requestCallback(request, sender, sendResponse) {
+  if (request.msg === 'importMessage')
+    importButton.value = request.n + ' imported';
+});

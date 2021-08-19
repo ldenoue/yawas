@@ -13,7 +13,7 @@
       "all_frames": true
     }
   ],
-  "permissions": ["https://www.google.com/bookmarks/*","storage","contextMenus","tabs"],
+  "permissions": ["https://www.google.com/bookmarks/*","storage","contextMenus","tabs","bookmarks"],
   "browser_action": {
 		"default_title": "Yawas",
   	"default_icon": "yawas_on_128.png",

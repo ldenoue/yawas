@@ -10,6 +10,7 @@ var rightMark = '>>';//'&rdquo;'
 var lenQuote = rightMark.length;
 var handlePDF = false;
 var saveLocally = false;
+var saveChromeBookmarks = false;
 var googleSignature = null;
 
 chrome.runtime.onMessage.addListener(requestCallback);
@@ -17,11 +18,13 @@ chrome.runtime.onMessage.addListener(requestCallback);
 chrome.storage.sync.get({
     handlePDF: false,
     saveLocally: false,
+    saveChromeBookmarks: true,
   }, function(items) {
     if (items)
     {
       handlePDF = items.handlePDF;
       saveLocally = items.saveLocally;
+      saveChromeBookmarks = items.saveChromeBookmarks;
     }
   });
 
@@ -32,12 +35,14 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (key === 'handlePDF')
     {
       handlePDF = storageChange.newValue;
-      //console.log('handlePDF changed to=',handlePDF);
     }
     if (key === 'saveLocally')
     {
       saveLocally = storageChange.newValue;
-      //console.log('saveLocally changed to=',saveLocally);
+    }
+    if (key === 'saveChromeBookmarks')
+    {
+      saveChromeBookmarks = storageChange.newValue;
     }
   }
 });
@@ -65,31 +70,50 @@ function stripMobilizer(url)
     return url;
 }
 
-async function exportAllBookmarks()
+function importAllBookmarks(callback)
 {
+  chrome.bookmarks.search({}, async res => {
+    let urls = {};
+    res.forEach((item, i) => {
+      urls[item.url] = item.id;
+    });
+    console.log('found ',res.length,' chrome bookmarks')
     var start = 0;
-    var list = [];
+    //var list = [];
     var loop = true;
-    while (loop)
+    var n = 0;
+    while (loop && n < 200)
     {
-        console.log('start=',start);
-        var url = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
-        var res = await fetch(url);
-        var str = await res.text();
-        var xml = (new window.DOMParser()).parseFromString(str, "text/xml");
-        var items = xml.querySelectorAll('item');
-        items.forEach(i => {
-                      var title = i.querySelector('title').textContent;
-                      var url = i.querySelector('link').textContent;
-                      var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent:'';
-                      list.push({title:title,url:url,annotations:annotations});
-                      console.log(url);
-                      });
-        start += items.length;
-        if (items.length === 0)
-            loop = false;
+      console.log('start=',start);
+      chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
+      var url = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
+      var res = await fetch(url);
+      var str = await res.text();
+      var xml = (new window.DOMParser()).parseFromString(str, "text/xml");
+      var items = xml.querySelectorAll('item');
+      items.forEach(i => {
+        var title = i.querySelector('title').textContent;
+        var url = i.querySelector('link').textContent;
+        var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent:'';
+        //let obj = {title:title,url:url,annotations:annotations}
+        //list.push(obj);
+        //console.log(url);
+        n++;
+        if (urls[url]) {
+          //console.log('updating chrome bookmark',urls[url],url,annotations)
+          chrome.bookmarks.update(urls[url],{title:title+'#__#'+annotations,url:url});
+        }
+        else {
+          //console.log('creating new chrome bookmark',url,annotations)
+          chrome.bookmarks.create({title:title+'#__#'+annotations,url:url});
+        }
+      });
+      start += items.length;
+      if (items.length === 0)
+        loop = false;
     }
-    return list;
+    callback(n);
+  })
 }
 
 //let getannotationscb = {};
@@ -123,21 +147,43 @@ function clearAbortTimer() {
   }
 }
 
+function yawas_getAnnotations_chrome_bookmarks(webUrl,cb)
+{
+  let url = purifyURL(webUrl);
+  chrome.bookmarks.search({url:url},function (result) {
+    console.log(result)
+    let annotations = '';
+    let labels = '';
+    result.forEach((item, i) => {
+      let chunks = item.title.split('#__#');
+      if (chunks.length > 1) {
+        annotations += chunks[1];
+      }
+    });
+    if (annotations.length > 0) {
+      yawas_remapAnnotations(webUrl,annotations,labels,cb);
+    }
+  });
+}
+
+function yawas_getAnnotations_chrome_storage(webUrl,cb) {
+  var keyName = purifyURL(webUrl).hashCode();
+  var obj = {};
+  obj[keyName] = null;
+  chrome.storage.sync.get(obj,function(items) {
+    if (items && items[keyName])
+    {
+      yawas_remapAnnotations(webUrl,items[keyName].annotations,items[keyName].labels,cb);
+    }
+  });
+}
+
 function yawas_getAnnotations(webUrl,cb)
 {
     if (saveLocally)
-    {
-      var keyName = purifyURL(webUrl).hashCode();
-      var obj = {};
-      obj[keyName] = null;
-      chrome.storage.sync.get(obj,function(items) {
-        if (items && items[keyName])
-        {
-          yawas_remapAnnotations(webUrl,items[keyName].annotations,items[keyName].labels,cb);
-        }
-      });
-      return;
-    }
+      return yawas_getAnnotations_chrome_storage(webUrl)
+    if (saveChromeBookmarks)
+      return yawas_getAnnotations_chrome_bookmarks(webUrl,cb);
 
     googleSignature = null; // invalidate signature
 
@@ -343,7 +389,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
         webAnnotation += '#' + couleur;
     webAnnotation += rightMark + " ";
     let pureLen = webAnnotation.length;
-    if (webAnnotation.length > 2048)
+    if (!saveChromeBookmarks && webAnnotation.length > 2048)
     {
     	console.log('too long so compacting annotations',qurl,webAnnotation.length);
     	var compacted = yawas_compact(webAnnotation);
@@ -386,7 +432,26 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
       obj[keyName] = {title:title,labels:labels,annotations:annotations};
       chrome.storage.sync.set(obj,function() {
       });
-      return callback({ok:true});
+      callback({ok:true});
+      return;
+    }
+    if (saveChromeBookmarks)
+    {
+      let url = purifyURL(webUrl)
+      let obj = {url: url, title: title + '#__#' + annotations};
+      //console.log('obj=',obj);
+      chrome.bookmarks.search({url:url},function (result) {
+        if (result && result.length > 0)
+        {
+          console.log('updating bookmark')
+          chrome.bookmarks.update(result[0].id,obj);
+        } else {
+          console.log('creating bookmark')
+          chrome.bookmarks.create(obj);
+        }
+        callback({ok:true});
+      });
+      return;
     }
 
 
@@ -631,11 +696,20 @@ function annotationToArray(annotations)
     return highlights;
 }
 
+async function startImport() {
+  importAllBookmarks(function (n) {
+    chrome.runtime.sendMessage({ msg: "importMessage", n: n });
+    alert('imported ' + n + ' google bookmarks into chrome bookmarks');
+  });
+}
+
 function requestCallback(request, sender, sendResponse)
 {
   var tabURL = purifyURL(request.url);
   var tabTitle = request.title;
   //console.log('requestCallback',request);
+  if(request.msg == "startImportFunc")
+    startImport();
   if (request.fn === 'yawas_getAnnotations')
   {
     yawas_getAnnotations(request.url,function(res){
@@ -742,7 +816,7 @@ function updateHighlight(fragment, occurence, newcolor, comment, url, title,page
       if (!webLabels)
           webLabels = '';
       //cachedAnnotations[qurl] = webAnnotation;
-      if (webAnnotation.length > 2048)
+      if (!saveChromeBookmarks && webAnnotation.length > 2048)
         return cb({error:'too long',toobig:true});
       yawas_storeHighlightsNow(url, title, webLabels, webAnnotation, googleSignature, function (res){
         if (res.ok)

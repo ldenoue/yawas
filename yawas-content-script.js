@@ -275,7 +275,7 @@ function yawas_signin()
     window.open('https://www.google.com/accounts/ServiceLogin?service=toolbar&nui=1&hl=en&continue=http%3A%2F%2Ftoolbar.google.com%2Fcommand%3Fclose_browser','bkmk_popup','left='+left+',top='+top+',height='+height+'px,width='+width+'px,resizable=1');
 }
 
-function isSavingLocally(cb)
+/*function isSavingLocally(cb)
 {
   chrome.storage.sync.get({saveLocally: false}, function(items) {
     if (items && items.saveLocally === true)
@@ -283,7 +283,7 @@ function isSavingLocally(cb)
     else
       cb(false);
   });
-}
+}*/
 
 function yawas_undohighlight()
 {
@@ -844,123 +844,7 @@ function yawas_delete_highlight() {
   }
 }
 
-/*function editLocally()
-{
-  var docurl = yawas_getGoodUrl(document);
-  var editPageURL = chrome.extension.getURL('localedit.html?url=' + docurl);
-  alert(editPageURL);
-  var a = window;
-  a.open(editPageURL, "bkmk_popup", "left="+((a.screenX||a.screenLeft)+10)+",top="+((a.screenY||a.screenTop)+10)+",height=420px,width=550px,resizable=1,alwaysRaised=1");
-}
-
-function yawas_chrome_edit()
-{
-  isSavingLocally(function (res) {
-    if (res === true)
-    {
-      return editLocally();
-    }
-    if (window.top !== window)
-      return;
-    try {
-        var doc = document;
-        var docurl = yawas_getGoodUrl(doc);
-        var url = encodeURIComponent(docurl);
-        var title = encodeURIComponent(doc.title);
-        var a=window;
-        a.open("https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + url + "&title="  + title, "bkmk_popup", "left="+((a.screenX||a.screenLeft)+10)+",top="+((a.screenY||a.screenTop)+10)+",height=420px,width=550px,resizable=1,alwaysRaised=1");
-    } catch (e) { console.error('edit error:' + e); }
-  });
-}*/
-
 var currentHighlight = 0;
-
-/*function showDonateButton()
-{
-    var donatewrapper = document.createElement('div');
-    donatewrapper.style.position = 'fixed';
-    donatewrapper.style.zIndex = 200000;
-    donatewrapper.style.margin = '0px';
-    donatewrapper.style.padding = '16px';
-    donatewrapper.style.backgroundColor = '#190B33';
-    donatewrapper.style.fontSize = '13pt';
-    donatewrapper.style.fontFamily = '"avenir next",Helvetica';
-    donatewrapper.style.right = '8px';
-    donatewrapper.style.top = '8px';
-    donatewrapper.style.borderRadius = '0px';
-    donatewrapper.style.color = 'white';
-    donatewrapper.style.boxShadow = '0 0 3px black';
-    donatewrapper.style.transform = 'translateY(-400px)';
-    donatewrapper.style.opacity = 0;
-    donatewrapper.style.transition = 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out';
-
-    donatewrapper.innerHTML = '<span style="color:white;margin:16px;padding:16px">Please support Yawas<span>';
-    var donate = document.createElement('button');
-    donate.addEventListener('click',function () {
-      donatewrapper.style.opacity = 0;
-      setTimeout(function () {
-        donatewrapper.parentElement.removeChild(donatewrapper);
-      },400);
-      chrome.storage.sync.set({
-          showdonate: false,
-        }, function() {
-      });
-      sendMessage({'fn':'yawas_donate'});
-    });
-    donate.textContent = 'Donate';
-    donate.style.backgroundColor = 'rgb(255, 196, 57)';
-    donate.style.color = 'black';
-    donate.style.display = 'block';
-    donate.style.marginLeft = 'auto';
-    donate.style.marginRight = 'auto';
-    donate.style.padding = '8px 16px';
-    donate.style.marginTop = '16px';
-    donate.style.borderRadius = '32px';
-    donate.setAttribute('title','Donate to support Yawas');
-    donate.style.cursor = 'pointer';
-    donate.style.border = 0;
-    donate.style.boxShadow = '0 0 3px black';
-    donate.style.fontSize = '13px';
-    donate.style.fontWeight = 'bold';
-    donate.addEventListener('mouseover',function () {this.style.color='white';});
-    donate.addEventListener('mouseout',function () {this.style.color='black';});
-
-    var close = document.createElement('button');
-    close.addEventListener('click',function () {
-      donatewrapper.style.opacity = 0;
-      donatewrapper.style.transform = 'translateY(-400px)';
-      setTimeout(function () {
-        donatewrapper.parentElement.removeChild(donatewrapper);
-      },400);
-      chrome.storage.sync.set({
-        showdonate: false,
-      }, function() {
-      });
-      //alert('You can always DONATE later (click the Yawas star icon)');
-    });
-    close.style.position = 'absolute';
-    close.style.left = '4px';
-    close.style.top = '4px';
-    close.addEventListener('mouseover',function () {this.style.color='gray';});
-    close.addEventListener('mouseout',function () {this.style.color='white';});
-    close.style.backgroundColor = 'transparent';
-    close.setAttribute('title','Close');
-    close.style.borderShadow = null;
-    close.style.boxShadow = '0 0 0px black';
-    close.style.cursor = 'pointer';
-    close.style.color = 'white';
-    close.style.display = 'block';
-    close.style.fontWeight = 'bold';
-    close.style.fontSize = '12px';
-    close.style.textAlign = 'center';
-    close.style.border = 0;
-    close.style.outline = 'none';
-    close.textContent = '✕';
-    donatewrapper.appendChild(donate);
-    donatewrapper.appendChild(close);
-    document.body.appendChild(donatewrapper);
-    setTimeout(function () { donatewrapper.style.opacity = 1; donatewrapper.style.transform = 'translateY(0)';},2000);
-}*/
 
 function addStyle(doc,css)
 {
@@ -986,8 +870,6 @@ function yawas_next_highlight()
     currentHighlight += 1;
     setTimeout(function () { h.style.opacity=1.0; }, 300);
 }
-
-//console.log('here');
 
 window.onhashchange = function (evt) {
   askForAnnotations(2000);
@@ -1015,22 +897,6 @@ else
         addHighlightsWrapper();
         addStyle(window.document,'.yawas-highlight:hover{opacity:0.6;}.yawas-highlight[data-comment]{border-bottom:1px dashed black}');
         askForAnnotations(2000);
-        /*setTimeout(function () {
-          var documentClone = document.cloneNode(true);
-          var article = new Readability(documentClone).parse();
-          //console.log(article.content);
-          if (article && article.content)
-          {
-            let div = document.createElement('div');
-            div.innerHTML = article.content;
-            document.body.appendChild(div);
-            var pdf = new jsPDF('p', 'pt', 'letter');
-            pdf.html(div,{callback: function (pdf) {
-              pdf.save('test.pdf');
-              div.parentElement.removeChild(div);
-            }});
-          }
-        },4000);*/
     }
     var elems = document.querySelectorAll('*');
     for (var i=0;i<elems.length;i++)
@@ -1038,7 +904,6 @@ else
         if (elems[i].style)
         {
             elems[i].style.userSelect='text';
-            //elems[i].style.webkitUserSelect='text';
         }
     }
 }

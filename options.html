@@ -57,12 +57,14 @@ padding:8px 16px;
 	<!--input type="checkbox" id="handlePDF"/> Use Yawas to view PDF documents
 	<br-->
 	<!--input type="checkbox" id="saveGoogle"/>Save highlights to Google Bookmarks<br/-->
-	<input type="checkbox" id="saveLocally"/> Save highlights locally (chrome.storage.sync)
-	<br><br>
+  <h3>Saving options</h3>
+  <input type="radio" name="saveoption" id="saveChromeBookmarks"/> chrome.bookmark API (unlimited)<br>
+	<input type="radio" name="saveoption" id="saveLocally"/> chrome.storage.sync (max 512 entries)<br>
 	<!--button id="save">Save and close</button-->
 	<button id="restore" title="Restore default options">Restore</button>
 	<br><br>
-  <!--Thank you for supporting Yawas <button title="Donate to support Yawas" class="adonate" id="donate">Donate</button-->
+  <h3>Import your Google Bookmarks to Chrome Bookmarks</h3>
+  <input type="button" id="importChromeBookmarks" value="Import">
 	<br>
 </body>
 <script src="options.js"></script>

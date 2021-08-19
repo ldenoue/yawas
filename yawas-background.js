@@ -70,6 +70,13 @@ function stripMobilizer(url)
     return url;
 }
 
+/* dangerous deletes all your chrome.Bookmarks
+chrome.bookmarks.search({}, async res => {
+    res.forEach((item, i) => {
+      chrome.bookmarks.remove(item.id)
+    });})
+*/
+
 function importAllBookmarks(callback)
 {
   chrome.bookmarks.search({}, async res => {
@@ -82,9 +89,10 @@ function importAllBookmarks(callback)
     //var list = [];
     var loop = true;
     var n = 0;
-    while (loop && n < 200)
+    //let max = 200;
+    while (loop)// && n <= max)
     {
-      console.log('start=',start);
+      //console.log('start=',start);
       chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
       var url = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
       var res = await fetch(url);
@@ -94,18 +102,21 @@ function importAllBookmarks(callback)
       items.forEach(i => {
         var title = i.querySelector('title').textContent;
         var url = i.querySelector('link').textContent;
-        var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent:'';
+        var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
         //let obj = {title:title,url:url,annotations:annotations}
         //list.push(obj);
         //console.log(url);
         n++;
+        let newTitle = title;
+        if (annotations > '')
+          newTitle += '#__#' + annotations;
         if (urls[url]) {
           //console.log('updating chrome bookmark',urls[url],url,annotations)
-          chrome.bookmarks.update(urls[url],{title:title+'#__#'+annotations,url:url});
+          chrome.bookmarks.update(urls[url],{title:newTitle,url:url});
         }
         else {
           //console.log('creating new chrome bookmark',url,annotations)
-          chrome.bookmarks.create({title:title+'#__#'+annotations,url:url});
+          chrome.bookmarks.create({title:newTitle,url:url});
         }
       });
       start += items.length;
@@ -699,7 +710,9 @@ function annotationToArray(annotations)
 async function startImport() {
   importAllBookmarks(function (n) {
     chrome.runtime.sendMessage({ msg: "importMessage", n: n });
-    alert('imported ' + n + ' google bookmarks into chrome bookmarks');
+    setTimeout(() => {
+      alert('import completed: imported ' + n + ' google bookmarks into chrome bookmarks!');
+    },1000);
   });
 }
 

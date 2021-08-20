@@ -7,7 +7,7 @@ You can clone this repository and install the extension locally.
 
 You can also download it directly for [Chrome](https://chrome.google.com/webstore/detail/yawas-web-and-pdf-highlig/kjlghdmljfgngjdpeaiogebkiilpiimk?hl=en) or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/yawas-web-and-pdf-highlighter/)
 
-# Donate
+# Contact me
 
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=R9JRASMAABUUE&item_name=Yawas+Web+and+PDF+Highlighter&currency_code=USD&source=appblit)
+Ask me questions on [twitter](https://twitter.com/ldenoue)
 

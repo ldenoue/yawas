@@ -56,5 +56,5 @@ importButton.addEventListener('click', () => chrome.runtime.sendMessage({ msg: "
 
 chrome.runtime.onMessage.addListener(function requestCallback(request, sender, sendResponse) {
   if (request.msg === 'importMessage')
-    importButton.value = request.n + ' imported';
+    importButton.textContent = request.n + ' imported';
 });

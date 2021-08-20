@@ -312,18 +312,17 @@ function addHighlightsWrapper()
     highlightswrapper.style.fontFamily = '"avenir next",Helvetica';
     highlightswrapper.style.right = '8px';
     highlightswrapper.style.bottom = '8px';
-    highlightswrapper.style.borderRadius = '0px';
+    highlightswrapper.style.borderRadius = '8px';
+    highlightswrapper.style.boxShadow = '0 0 2px black';
     highlightswrapper.style.color = 'white';
-    //highlightswrapper.style.boxShadow = '0 0 3px black';
-    //highlightswrapper.addEventListener('click',yawas_next_highlight);
     highlightswrapper.textContent = '';
     highlightswrapper.style.textAlign = 'center';
     //highlightswrapper.style.cursor = 'pointer';
 
     highlightswrapper.style.fontSize = '14px';
     highlightswrapper.style.fontWeight = 'bold';
-    highlightswrapper.style.color = 'black';
-    highlightswrapper.style.backgroundColor = '#8a8';
+    highlightswrapper.style.color = 'white';//'black';
+    highlightswrapper.style.backgroundColor = '#190B33';//'#8a8';
     //highlightswrapper.style.borderRadius = '32px';
     highlightswrapper.style.padding = '8px 16px';
     //highlightswrapper.textContent = '';
@@ -333,14 +332,16 @@ function addHighlightsWrapper()
     dragheader.style.textAlign = 'center';
     dragheader.style.cursor = 'move';
     dragheader.style.fontSize = '16px';
-    dragheader.style.color = '#ccc';
+    dragheader.style.color = '#8a8';//'#ccc';
     dragheader.textContent = 'Yawas';
     highlightswrapper.appendChild(dragheader);
     var highlightcaption = document.createElement('div');
-    highlightcaption.addEventListener('click',yawas_next_highlight);
+    highlightcaption.addEventListener('mousedown',(evt) => yawas_next_highlight(evt));
     highlightcaption.title = 'Click to navigate in highlights';
     highlightcaption.id = 'highlightcaption';
     highlightcaption.style.cursor = 'pointer';
+    highlightcaption.style.userSelect = 'none';
+    highlightcaption.style.webkitUserSelect = 'none';
     highlightcaption.textContent = '';
     highlightswrapper.appendChild(highlightcaption);
 
@@ -358,7 +359,7 @@ function addHighlightsWrapper()
     highlightsnotfoundtext.id = 'highlightsnotfoundtext';
     highlightswrapper.appendChild(highlightsnotfoundtext);
 
-    var charactersleft = document.createElement('div');
+    /*var charactersleft = document.createElement('div');
     charactersleft.style.color = '#000';
     charactersleft.style.fontSize = '11px';
     charactersleft.style.cursor = 'pointer';
@@ -366,13 +367,14 @@ function addHighlightsWrapper()
     charactersleft.addEventListener('click',function () { alert(charactersUsed + ' characters used out of 2048 allowed by Google Bookmarks for this page')},false);
     charactersleft.style.display = 'block';
     charactersleft.id = 'charactersleft';
-    highlightswrapper.appendChild(charactersleft);
+    highlightswrapper.appendChild(charactersleft);*/
 
     let close = document.createElement('div');
     close.textContent = '✕';
     close.style.position = 'absolute';
     close.style.top = 0;
-    close.style.right = 0;
+    close.style.left = 0;
+    close.style.margin = '4px';
     close.style.fontSize = '12px'
     close.style.padding = '4px';
     close.style.color = '#ccc';
@@ -853,22 +855,27 @@ function addStyle(doc,css)
   doc.head.appendChild(style);
 }
 
-function yawas_next_highlight()
+function yawas_next_highlight(evt)
 {
+  // prevent text selection
+  if (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+  }
   if (!signedin)
     return yawas_signin();
 
-    var highlights = document.getElementsByClassName('yawas-highlight');
-    if (highlights.length==0)
-        return;
-    currentHighlight = currentHighlight % highlights.length;
-    updateHighlightCaption();
-    let h = highlights[currentHighlight];
-    h.style.transition = 'opacity 0.3s ease-in-out';
-    h.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
-    h.style.opacity = 0.2;
-    currentHighlight += 1;
-    setTimeout(function () { h.style.opacity=1.0; }, 300);
+  var highlights = document.getElementsByClassName('yawas-highlight');
+  if (highlights.length==0)
+      return;
+  currentHighlight = currentHighlight % highlights.length;
+  updateHighlightCaption();
+  let h = highlights[currentHighlight];
+  h.style.transition = 'opacity 0.3s ease-in-out';
+  h.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
+  h.style.opacity = 0.2;
+  currentHighlight += 1;
+  setTimeout(function () { h.style.opacity=1.0; }, 300);
 }
 
 window.onhashchange = function (evt) {

@@ -13,6 +13,21 @@ var saveLocally = false;
 var saveChromeBookmarks = false;
 var googleSignature = null;
 
+var yawasBookmarkId = null;
+
+chrome.bookmarks.search({title:'Yawas'}, res => {
+  if (res.length > 0) {
+    yawasBookmarkId = res[0].id;
+    //console.log('got',{yawasBookmarkId})
+  }
+  else {
+    chrome.bookmarks.create({title:'Yawas'}, newfolder => {
+      yawasBookmarkId = newfolder;
+      //console.log('created',{yawasBookmarkId})
+    })
+  }
+})
+
 chrome.runtime.onMessage.addListener(requestCallback);
 
 chrome.storage.sync.get({
@@ -84,15 +99,15 @@ function importAllBookmarks(callback)
     res.forEach((item, i) => {
       urls[item.url] = item.id;
     });
-    console.log('found ',res.length,' chrome bookmarks')
+    //console.log('found ',res.length,' chrome bookmarks')
     var start = 0;
     //var list = [];
     var loop = true;
     var n = 0;
-    //let max = 200;
+    let max = 200;
     while (loop)// && n <= max)
     {
-      //console.log('start=',start);
+      console.log('start=',start);
       chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
       var url = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
       var res = await fetch(url);
@@ -116,7 +131,7 @@ function importAllBookmarks(callback)
         }
         else {
           //console.log('creating new chrome bookmark',url,annotations)
-          chrome.bookmarks.create({title:newTitle,url:url});
+          chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
         }
       });
       start += items.length;
@@ -162,7 +177,7 @@ function yawas_getAnnotations_chrome_bookmarks(webUrl,cb)
 {
   let url = purifyURL(webUrl);
   chrome.bookmarks.search({url:url},function (result) {
-    console.log(result)
+    //console.log(result)
     let annotations = '';
     let labels = '';
     result.forEach((item, i) => {
@@ -458,6 +473,7 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
           chrome.bookmarks.update(result[0].id,obj);
         } else {
           console.log('creating bookmark')
+          obj.parentId = yawasBookmarkId;
           chrome.bookmarks.create(obj);
         }
         callback({ok:true});
@@ -711,7 +727,7 @@ async function startImport() {
   importAllBookmarks(function (n) {
     chrome.runtime.sendMessage({ msg: "importMessage", n: n });
     setTimeout(() => {
-      alert('import completed: imported ' + n + ' google bookmarks into chrome bookmarks!');
+      alert('Import completed: ' + n + ' Google Bookmarks are now in your Chrome Bookmarks!');
     },1000);
   });
 }

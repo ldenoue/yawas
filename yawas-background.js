@@ -130,7 +130,7 @@ function importAllBookmarks(callback)
           chrome.bookmarks.update(urls[url],{title:newTitle,url:url});
         }
         else {
-          //console.log('creating new chrome bookmark',url,annotations)
+          console.log('creating new chrome bookmark',url,newTitle,yawasBookmarkId)
           chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
         }
       });

@@ -121,6 +121,7 @@ function importAllBookmarks(callback)
           console.log('not importing file bookmark',url)
         }
         else {
+<<<<<<< HEAD
           var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
           //let obj = {title:title,url:url,annotations:annotations}
           //list.push(obj);
@@ -137,6 +138,10 @@ function importAllBookmarks(callback)
             //console.log('creating new chrome bookmark',url,annotations)
             chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
           }
+=======
+          console.log('creating new chrome bookmark',url,newTitle,yawasBookmarkId)
+          chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
+>>>>>>> 46392167e2faacadc87904609783815f5fc01cfc
         }
       });
       start += items.length;

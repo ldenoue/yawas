@@ -20,8 +20,7 @@
     "default_popup": "options.html"
 	},
 	"icons": {
-   "16": "icon16.png",
-   "32": "icon32.png"
+   "128": "yawas_on_128.png"
   },
   "commands": {
     "yawas-yellow": {

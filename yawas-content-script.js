@@ -236,7 +236,7 @@ function askForAnnotations(delay)
     delay = 0;
   setTimeout(function () {
     sendMessage(additionalInfo, function (res) {
-      if (res.error)
+      if (res && res.error)
       {
         if (res.signedout)
         {
@@ -248,13 +248,13 @@ function askForAnnotations(delay)
           }
         }
       }
-      else if (res.noannotation)
+      else if (res && res.noannotation)
       {
         signedin = true;
         hoverElement = null;
         updateHighlightCaption();
       }
-      else if (res.annotations)
+      else if (res && res.annotations)
       {
         signedin = true;
         hoverElement = null;
@@ -398,7 +398,7 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
     };
     sendMessage(additionalInfo, function (res)
     {
-      if (res.addedhighlight)
+      if (res && res.addedhighlight)
       {
         signedin = true;
         setCharactersLeft(res.pureLen);
@@ -409,12 +409,12 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
           recolor('note');
         }
       }
-      if (res.toobig)
+      if (res && res.toobig)
       {
         yawas_undohighlight();
         alert('Too many characters (>2048 even compacted)!');
       }
-      if (res.undohighlight || res.error)
+      if (res && res.undohighlight || res.error)
       {
         if (res.signedout)
           alert('Yawas cannot store your highlight because you are signed out.\nPlease signin first and then refresh this page');
@@ -541,7 +541,7 @@ function sendMessage(info,cb)
 {
   try {
     chrome.runtime.sendMessage(info, function response(res) {
-      if (cb)
+      if (res && cb)
         cb(res);
     });
   } catch(e)
@@ -775,7 +775,7 @@ function updateHighlight(elt,color,newcomment)
     if (elt)
     {
         sendMessage({action: "recolor_highlight", url: yawas_getGoodUrl(document), title: document.title, highlightString: hoverElement.dataset.selection, n:hoverElement.dataset.yawasOccurence, newcolor: color, comment:newcomment}, function (res){
-          if (res.error)
+          if (res && res.error)
           {
             //console.error(res);
             yawas_undohighlight();

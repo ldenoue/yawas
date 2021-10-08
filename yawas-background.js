@@ -117,21 +117,26 @@ function importAllBookmarks(callback)
       items.forEach(i => {
         var title = i.querySelector('title').textContent;
         var url = i.querySelector('link').textContent;
-        var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
-        //let obj = {title:title,url:url,annotations:annotations}
-        //list.push(obj);
-        //console.log(url);
-        n++;
-        let newTitle = title;
-        if (annotations > '')
-          newTitle += '#__#' + annotations;
-        if (urls[url]) {
-          //console.log('updating chrome bookmark',urls[url],url,annotations)
-          chrome.bookmarks.update(urls[url],{title:newTitle,url:url});
+        if (url.indexOf('file:///') === 0) {
+          console.log('not importing file bookmark',url)
         }
         else {
-          //console.log('creating new chrome bookmark',url,annotations)
-          chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
+          var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
+          //let obj = {title:title,url:url,annotations:annotations}
+          //list.push(obj);
+          //console.log(url);
+          n++;
+          let newTitle = title;
+          if (annotations > '')
+            newTitle += '#__#' + annotations;
+          if (urls[url]) {
+            //console.log('updating chrome bookmark',urls[url],url,annotations)
+            chrome.bookmarks.update(urls[url],{title:newTitle,url:url});
+          }
+          else {
+            //console.log('creating new chrome bookmark',url,annotations)
+            chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
+          }
         }
       });
       start += items.length;

@@ -42,11 +42,26 @@ function getFolderName(url,dateString) {
   return res
 }
 
+async function remove(id) {
+  if (!id)
+    return
+  return new Promise((resolve,reject) => {
+    chrome.bookmarks.remove(id,res => resolve(res))
+  })
+}
+
 async function search(obj) {
   return new Promise((resolve,reject) => {
     chrome.bookmarks.search(obj,res => resolve(res))
   })
 }
+
+/*
+chrome.bookmarks.search({}, async res => {
+    res.forEach((item, i) => {
+      chrome.bookmarks.remove(item.id)
+    });})
+*/
 
 async function create(obj) {
   return new Promise((resolve,reject) => {
@@ -54,16 +69,28 @@ async function create(obj) {
   })
 }
 
+async function folderExists(name,parentId) {
+  parentId = parentId ? parentId : yawasBookmarkId
+  let res = await search({title:name})
+  return res.find(f => f.parentId === parentId)
+}
+
+async function createFolder(year,month) {
+  let yearFolder = await folderExists(year)
+  if (!yearFolder)
+    yearFolder = await create({title:year,parentId: yawasBookmarkId})
+  let monthFolder = await folderExists(month,yearFolder.id)
+  if (!monthFolder)
+    monthFolder = await create({title:month,parentId: yearFolder.id})
+  return monthFolder
+}
+
 async function createBookmark(obj,date) {
-  let folderName = getFolderName(obj.url,date)
-  let res = await search({title:folderName})
-  if (res.length > 0) {
-    await create({title:obj.title,url:obj.url,parentId: res[0].id})
-  }
-  else {
-    let newfolder = await create({title:folderName,parentId: yawasBookmarkId})
-    await create({title:obj.title,url:obj.url,parentId: newfolder.id})
-  }
+  let year = ''+date.getFullYear()
+  let month = date.toLocaleDateString('en-US',{month:'long'})
+  let folder = await createFolder(year,month)
+  //console.log(year,month,folder)
+  await create({title:obj.title,url:obj.url,parentId: folder.id})
 }
 
 chrome.runtime.onMessage.addListener(requestCallback);
@@ -131,7 +158,7 @@ async function deleteYawasFolder() {
   }
 }
 
-async function moveBookmarksIntoFolders() {
+/*async function moveBookmarksIntoFolders() {
   let res = await search({})
   for (let item in res) {
     if (item.parentId === yawasBookmarkId) {
@@ -145,56 +172,67 @@ async function moveBookmarksIntoFolders() {
       chrome.bookmarks.remove(item.id)
     }
   }
-}
+}*/
 
 async function importAllBookmarks(callback)
 {
   let existing = await search({})
-  let urls = {};
-  existing.forEach((item, i) => {
-    urls[item.url] = item.id;
-  });
-  //console.log('found ',res.length,' chrome bookmarks')
+  existing = existing.filter(item => item.url > '')
+  let existingUrls = {};
+  for (let item of existing) {
+    existingUrls[item.url] = true;
+    await remove(item.id); // will be recreated properly at the end
+  }
   var start = 0;
   //var list = [];
   var loop = true;
   var n = 0;
-  let max = 200;
+  let max = 800;
+  let importedUrls = new Set()
   while (loop)// && n <= max)
   {
     console.log('start=',start);
     chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
-    var url = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
-    var res = await fetch(url);
-    var str = await res.text();
-    var xml = (new window.DOMParser()).parseFromString(str, "text/xml");
-    var items = xml.querySelectorAll('item');
+    let urlBookmarks = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
+    let res = await fetch(urlBookmarks);
+    let str = await res.text();
+    let xml = (new window.DOMParser()).parseFromString(str, "text/xml");
+    let items = xml.querySelectorAll('item');
     for (let i of items) {
-      var title = i.querySelector('title').textContent;
-      var url = i.querySelector('link').textContent;
-      var date = i.querySelector('pubDate')? new Date(i.querySelector('pubDate').textContent) : null;
+      let title = i.querySelector('title').textContent;
+      let url = i.querySelector('link').textContent;
+      let date = i.querySelector('pubDate')? new Date(i.querySelector('pubDate').textContent) : null;
       if (url.indexOf('file:///') === 0) {
-        console.log('not importing file bookmark',url)
+        console.error('not importing file bookmark',url)
+      } else if (!(url > '')) {
+        console.error('url undefined',url)
       }
       else {
-        var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
+        importedUrls.add(url);
+        let annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
         n++;
         let newTitle = title;
         if (annotations > '')
           newTitle += '#__#' + annotations;
-        if (urls[url]) {
-          //console.log('updating chrome bookmark',urls[url],url,annotations)
-          chrome.bookmarks.update(urls[url],{title:newTitle,url:url});
+        if (existingUrls[url]) {
+          await remove(existingUrls[url].id);
         }
-        else {
-          await createBookmark({title:newTitle, url:url},date)
-        }
+        await createBookmark({title:newTitle, url:url},date)
       }
     }
     start += items.length;
     if (items.length === 0)
       loop = false;
   }
+  // recreate the ones not imported from Google Bookmarks
+  for (let item of existing) {
+    if (!importedUrls.has(item.url))
+    {
+      console.log('creating from existing',item.url)
+      await createBookmark({title:item.title,url:item.url},new Date(item.dateAdded))
+    }
+  }
+
   callback(n);
 }
 

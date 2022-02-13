@@ -20,7 +20,8 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 body {
-  margin:16px;
+  margin:16px auto;
+  max-width:640px;
   overflow-x:hidden;
   font-size:var(--body-font-size);
 	background-color:var(--bg);color:var(--text);
@@ -40,12 +41,17 @@ button{
 button:hover{color:white}
 a{color:white}
 
+.res{
+  padding-bottom:32px;
+  border-top: 0px solid yellow;
+}
 .hit{
   display:flex;
   flex-direction: row;
   justify-items: center;
   align-items: center;
 }
+.hit p {margin:0}
 .round{
   width:12px;
   height:12px;
@@ -64,15 +70,26 @@ input,textarea{outline:none;font-size:16px;border:0;padding:8px;margin-bottom:16
 
 #results{
   margin-bottom:64px;
+  max-width:600px;
 }
+#close{
+  position:absolute;
+  bottom:16px;
+}
+.title{
+  font-size:120%;
+  font-weight: bold;
+}
+#form{margin:16px 0}
 </style>
 </head>
 <body>
+<div class='title'>Yawas Search</div>
 <form id='form'>
-<input autocomplete='off' autocorrect='off' size=60 placeholder='search titles and annotations' type='search' id='query'><input id='searchbutton' value='search' type='submit'>
+<input autocomplete='off' autocorrect='off' size=60 placeholder='search titles and annotations' type='text' id='query'><input id='searchbutton' value='search' type='submit'>
 </form>
 <div id='results'></div>
-<button id='close'>Close</button>
+<!--center><button id='close'>Close</button></center-->
 <script src='localsearch.js'></script>
 </body>
 </html>

@@ -9,6 +9,7 @@ chrome.bookmarks.search({}, res => {
   }
   all.sort((a,b) => a.dateAdded - b.dateAdded)
   query.placeholder = 'search ' + all.length + ' titles and highlights'
+  //search('')
 })
 
 var leftMark = '<<';//'&ldquo;'
@@ -17,7 +18,7 @@ var lenQuote = rightMark.length;
 
 function annotationToArray(annotations)
 {
-    if (annotations === null)
+    if (!annotations)
       return [];
     if (annotations.trim().length === 0)
       return [];
@@ -83,7 +84,10 @@ function domain(url) {
 }
 
 function bold(text,query) {
-  return text.replaceAll(query,'<b>' + query + '</b>')
+  if (query > '')
+    return text.replaceAll(query,'<b>' + query + '</b>')
+  else
+    return text;
 }
 function search(q) {
   //chrome.bookmarks.search({}, res => {
@@ -100,21 +104,22 @@ function search(q) {
     let title = chunks[0]
     let date = new Date(item.dateAdded).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})
     let highlights = annotationToArray(chunks[1]);
-    let html = ''
+    let html = []
     for (let h of highlights) {
       if (h.selection.indexOf(q) !== -1)
-        html += `<div class='hit'><!--span class='round yawas-${h.color}'></span--><p>${bold(h.selection,q)}</p></div>`
+        html.push(`<span>${bold(h.selection,q)}</span>`)
     }
-    hit.innerHTML = `<div>${bold(title,q)}</div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
+    html = html.join('...')
+    hit.innerHTML = `<div class='res'><div class='title'>${bold(title,q)} </div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
     results.appendChild(hit)
   }
 }
 
-document.getElementById('close').addEventListener('click',(evt) => {
+/*document.getElementById('close').addEventListener('click',(evt) => {
   evt.preventDefault()
   evt.stopPropagation()
   window.close();
-})
+})*/
 
 document.getElementById('form').onsubmit = (evt) => {
   evt.preventDefault()

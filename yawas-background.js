@@ -28,6 +28,29 @@ chrome.bookmarks.search({title:'Yawas'}, res => {
   }
 })
 
+function getFolderName(url) {
+  let res = 'unknown'
+  try {
+    res = new URL(url).hostname.replace('www.','')
+  } catch (e) {
+  }
+  return 'yawas-' + res
+}
+
+function createBookmark(obj) {
+  let folderName = getFolderName(obj.url)
+  chrome.bookmarks.search({title:folderName}, res => {
+    if (res.length > 0) {
+      chrome.bookmarks.create({title:obj.title,url:obj.url,parentId: res[0].id})
+    }
+    else {
+      chrome.bookmarks.create({title:folderName}, newfolder => {
+        chrome.bookmarks.create({title:obj.title,url:obj.url,parentId: newfolder})
+      })
+    }
+  })
+}
+
 chrome.runtime.onMessage.addListener(requestCallback);
 
 chrome.storage.sync.get({
@@ -117,15 +140,13 @@ function importAllBookmarks(callback)
       items.forEach(i => {
         var title = i.querySelector('title').textContent;
         var url = i.querySelector('link').textContent;
+        var date = new Date(i.querySelector('pubDate').textContent).getFullYear()
+        //var folderName = date.toLocaleDateString('en-US',{year:'numeric',month:'short'})
         if (url.indexOf('file:///') === 0) {
           console.log('not importing file bookmark',url)
         }
         else {
-<<<<<<< HEAD
           var annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
-          //let obj = {title:title,url:url,annotations:annotations}
-          //list.push(obj);
-          //console.log(url);
           n++;
           let newTitle = title;
           if (annotations > '')
@@ -136,12 +157,9 @@ function importAllBookmarks(callback)
           }
           else {
             //console.log('creating new chrome bookmark',url,annotations)
-            chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
+            //chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
+            createBookmark({title:newTitle, url:url})
           }
-=======
-          console.log('creating new chrome bookmark',url,newTitle,yawasBookmarkId)
-          chrome.bookmarks.create({parentId:yawasBookmarkId, title:newTitle, url:url});
->>>>>>> 46392167e2faacadc87904609783815f5fc01cfc
         }
       });
       start += items.length;
@@ -475,6 +493,7 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
     {
       let url = purifyURL(webUrl)
       let obj = {url: url, title: title + '#__#' + annotations};
+      var folderName = new Date().toLocaleDateString('en-US',{year:'numeric',month:'short'})
       //console.log('obj=',obj);
       chrome.bookmarks.search({url:url},function (result) {
         if (result && result.length > 0)
@@ -483,8 +502,9 @@ function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignatu
           chrome.bookmarks.update(result[0].id,obj);
         } else {
           console.log('creating bookmark')
-          obj.parentId = yawasBookmarkId;
-          chrome.bookmarks.create(obj);
+          //obj.parentId = yawasBookmarkId;
+          //chrome.bookmarks.create(obj);
+          createBookmark(obj)
         }
         callback({ok:true});
       });

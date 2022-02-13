@@ -1,38 +1,21 @@
-String.prototype.hashCode = function() {
-  var hash = 0, i, chr;
-  if (this.length === 0) return hash;
-  for (i = 0; i < this.length; i++) {
-    chr   = this.charCodeAt(i);
-    hash  = ((hash << 5) - hash) + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return 'yawas'+hash;
-};
-
-function save(e)
-{
-    var obj = {};
-    obj[keyName] = {title:title.value.trim(),labels:labels.value.trim(),annotations:annotations.value.trim()};
-    chrome.storage.sync.set(obj,function() {
-      window.close();
-    });
-}
-
 let r = new URLSearchParams(window.location.search);
 let docurl = r.get('url');
-var keyName = docurl.hashCode();
-var obj = {};
-obj[keyName] = null;
 
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelector('#save').addEventListener('click', save);
-    chrome.storage.sync.get(obj,function(items) {
-      if (items[keyName])
-      {
-        title.value = items[keyName].title;
-        labels.value = items[keyName].labels;
-        annotations.value = items[keyName].annotations;
-      }
-    });
-});
+let item = null;
+chrome.bookmarks.search({url:docurl},res => {
+  if (res && res[0]) {
+    item = res[0]
+    let chunks = item.title.split('#__#')
+    title.value = chunks[0]
+    annotations.value = chunks[1]
+  }
+})
 
+document.getElementById('save').addEventListener('click',(evt) => {
+  evt.preventDefault()
+  evt.stopPropagation()
+  let newtitle = title.value.trim() + '#__#' + annotations.value.trim()
+  chrome.bookmarks.update(item.id,{title:newtitle}, res => {
+    window.close();
+  });
+})

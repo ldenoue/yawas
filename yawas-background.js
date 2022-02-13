@@ -299,8 +299,8 @@ function yawas_getAnnotations_chrome_storage(webUrl,cb) {
 
 async function yawas_getAnnotations(webUrl,cb)
 {
-    if (saveLocally)
-      return yawas_getAnnotations_chrome_storage(webUrl)
+    //if (saveLocally)
+    //  return yawas_getAnnotations_chrome_storage(webUrl)
     if (saveChromeBookmarks)
       return await yawas_getAnnotations_chrome_bookmarks(webUrl,cb);
 
@@ -1025,7 +1025,8 @@ function getDeleteHandler() {
 
 function getSearchHandler() {
   return function(info, tab) {
-    chrome.tabs.create({url:'https://www.google.com/bookmarks/?hl=en#!view=threadsmgmt&fo=Starred&q=&g=Time'});
+    //chrome.tabs.create({url:'https://www.google.com/bookmarks/?hl=en#!view=threadsmgmt&fo=Starred&q=&g=Time'});
+    chrome.tabs.create({url:chrome.extension.getURL('localsearch.html')});
   };
 }
 
@@ -1042,10 +1043,11 @@ function isPDF(href)
 function getEditHandler() {
   return function(info, tab) {
     let possiblePDFUrl = isPDF(info.pageUrl);
-    if (saveLocally)
+    chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + encodeURIComponent(purifyURL(possiblePDFUrl)))});
+    /*if (saveLocally)
       chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + purifyURL(possiblePDFUrl))});
     else
-      chrome.tabs.create({url:"https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + purifyURL(possiblePDFUrl) + "&title="  + tab.title});
+      chrome.tabs.create({url:"https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + purifyURL(possiblePDFUrl) + "&title="  + tab.title});*/
   };
 }
 

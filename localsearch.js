@@ -1,0 +1,124 @@
+let all = []
+chrome.bookmarks.search({}, res => {
+  for (let item of res) {
+    if (item.url > '') {
+      item.title = item.title.toLowerCase()
+      item.url = item.url.toLowerCase()
+      all.push(item)
+    }
+  }
+  all.sort((a,b) => a.dateAdded - b.dateAdded)
+  query.placeholder = 'search ' + all.length + ' titles and highlights'
+})
+
+var leftMark = '<<';//'&ldquo;'
+var rightMark = '>>';//'&rdquo;'
+var lenQuote = rightMark.length;
+
+function annotationToArray(annotations)
+{
+    if (annotations === null)
+      return [];
+    if (annotations.trim().length === 0)
+      return [];
+    var chuncks = annotations.split(rightMark);
+    var highlights = [];
+    for (var i=0;i<chuncks.length;i++)
+    {
+        var j = chuncks[i].indexOf(leftMark);
+        if (j>=0)
+        {
+            var comment = chuncks[i].substring(0,j).trim();
+            var highlight = chuncks[i].substring(j+lenQuote);
+            var k = highlight.lastIndexOf('@');
+            var occurence = 0;
+            var couleur = 'yellow';
+            var pagenumber = null;
+            if (k > 0)
+            {
+                try {
+                    var string = highlight.substring(k+1);
+                    var c = highlight.indexOf('#',k);
+                    if (c != -1)
+                    {
+                        var trail = highlight.substring(k+1,c);
+                        var chk = trail.split(',');
+                        //occurence = parseInt(highlight.substring(k+1,c));
+                        occurence = parseInt(chk[0]);
+                        if (chk.length===2)
+                            pagenumber = parseInt(chk[1]);
+                        couleur = highlight.substring(c+1);
+                    }
+                    else
+                    {
+                        //occurence = parseInt(highlight.substring(k+1));
+                        var trail = highlight.substring(k+1);
+                        var chk = trail.split(',');
+                        occurence = parseInt(chk[0]);
+                        if (chk.length===2)
+                            pagenumber = parseInt(chk[1]);
+                    }
+                    highlight = highlight.substring(0,k);
+                } catch (eint) { occurence = 0; }
+            }
+            else
+            {
+                var c = highlight.lastIndexOf('#');
+                if (c>0)
+                {
+                    couleur = highlight.substring(c+1);
+                    highlight = highlight.substring(0,c);
+                }
+            }
+            highlight = highlight.trim();//yawas_TrimString(highlight);
+            var obj = {p:pagenumber,selection:highlight,n:occurence,color:couleur,comment:comment};
+            highlights.push(obj);
+        }
+    }
+    return highlights;
+}
+
+function domain(url) {
+  return new URL(url).hostname
+}
+
+function bold(text,query) {
+  return text.replaceAll(query,'<b>' + query + '</b>')
+}
+function search(q) {
+  //chrome.bookmarks.search({}, res => {
+  //}
+  let res = []
+  for (let item of all) {
+    if (item.url.indexOf(q) !== -1 || item.title.indexOf(q) !== -1)
+      res.push(item)
+  }
+  results.innerHTML = '';
+  for (let item of res) {
+    let hit = document.createElement('div')
+    let chunks = item.title.split('#__#')
+    let title = chunks[0]
+    let date = new Date(item.dateAdded).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})
+    let highlights = annotationToArray(chunks[1]);
+    let html = ''
+    for (let h of highlights) {
+      if (h.selection.indexOf(q) !== -1)
+        html += `<div class='hit'><!--span class='round yawas-${h.color}'></span--><p>${bold(h.selection,q)}</p></div>`
+    }
+    hit.innerHTML = `<div>${bold(title,q)}</div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
+    results.appendChild(hit)
+  }
+}
+
+document.getElementById('close').addEventListener('click',(evt) => {
+  evt.preventDefault()
+  evt.stopPropagation()
+  window.close();
+})
+
+document.getElementById('form').onsubmit = (evt) => {
+  evt.preventDefault()
+  evt.stopPropagation()
+  if (query.value.trim() > '')
+    search(query.value.trim());
+}

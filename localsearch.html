@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<title>Yawas Edit</title>
+<title>Yawas Search</title>
 <style>
 :root{
 --titlefont:'avenir next',avenir,Lato,'GillSans',-apple-system,Helvetica,Arial,sans-serif;
@@ -19,7 +19,6 @@
   -webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
-html{width:420px;}
 body {
   margin:16px;
   overflow-x:hidden;
@@ -41,26 +40,39 @@ button{
 button:hover{color:white}
 a{color:white}
 
-.adonate{
-font-size:14px;
-font-weight:bold;
-color:black;
-background-color:rgb(255, 196, 57);
-border-radius:32px;
-padding:8px 16px;
+.hit{
+  display:flex;
+  flex-direction: row;
+  justify-items: center;
+  align-items: center;
 }
-.adonate:hover{color:white;}
-input,textarea{font-size:16px;border:0;padding:8px;margin-bottom:16px}
+.round{
+  width:12px;
+  height:12px;
+  line-height:1em;
+  margin-right:16px;
+  border-radius: 50%;
+  display:inline-block;
+}
+.yawas-yellow{background-color:yellow}
+.yawas-blue{background-color:#0df}
+.yawas-red{background-color:#ff9999}
+.yawas-green{background-color:#99ff99}
+.yawas-white{background-color:transparent}
 
+input,textarea{outline:none;font-size:16px;border:0;padding:8px;margin-bottom:16px}
+
+#results{
+  margin-bottom:64px;
+}
 </style>
 </head>
 <body>
-<form>
-<label>Title</label><BR><input size=60 type='text' id='title'><BR>
-<!--label>Labels</label><BR><input size=60 type='text' id='labels'><BR-->
-<label>Highlights</label><BR><textarea cols=60 rows=8 id='annotations'></textarea><BR>
-<button id='save'>Save and close</button>
+<form id='form'>
+<input autocomplete='off' autocorrect='off' size=60 placeholder='search titles and annotations' type='search' id='query'><input id='searchbutton' value='search' type='submit'>
 </form>
-<script src='localedit.js'></script>
+<div id='results'></div>
+<button id='close'>Close</button>
+<script src='localsearch.js'></script>
 </body>
 </html>

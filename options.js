@@ -50,6 +50,9 @@ function restoreOptions() {
 let importButton = document.getElementById('importChromeBookmarks');
 importButton.addEventListener('click', () => chrome.runtime.sendMessage({ msg: "startImportFunc" }));
 
+let searchButton = document.getElementById('searchChromeBookmarks');
+searchButton.addEventListener('click', () => chrome.tabs.create({url:chrome.extension.getURL('localsearch.html')}));
+
 chrome.runtime.onMessage.addListener(function requestCallback(request, sender, sendResponse) {
   if (request.msg === 'importMessage')
     importButton.textContent = request.n + ' imported';

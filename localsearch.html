@@ -52,6 +52,7 @@ a{color:white}
   align-items: center;
 }
 .hit p {margin:0}
+.res a {text-decoration: none;color:#8a8;}
 .round{
   width:12px;
   height:12px;
@@ -81,15 +82,15 @@ input,textarea{outline:none;font-size:16px;border:0;padding:8px;margin-bottom:16
   font-weight: bold;
 }
 #form{margin:16px 0}
+#searchbutton{font-weight: 500;text-transform: uppercase;}
 </style>
 </head>
 <body>
 <div class='title'>Yawas Search</div>
 <form id='form'>
-<input autocomplete='off' autocorrect='off' size=60 placeholder='search titles and annotations' type='text' id='query'><input id='searchbutton' value='search' type='submit'>
+<input autofocus autocorrect='off' autocapitalize='off' spellcheck='false' size=60 placeholder='search titles and annotations' type='text' id='query'><input id='searchbutton' value='find' type='submit'>
 </form>
-<div id='results'></div>
-<!--center><button id='close'>Close</button></center-->
+<div id='results'>loading...</div>
 <script src='localsearch.js'></script>
 </body>
 </html>

@@ -8,7 +8,8 @@ chrome.bookmarks.search({}, res => {
     }
   }
   all.sort((a,b) => a.dateAdded - b.dateAdded)
-  query.placeholder = 'search ' + all.length + ' titles and highlights'
+  //query.placeholder = 'search ' + all.length + ' titles and highlights'
+  results.innerHTML = '<p>search your yawas bookmarks by title, url, highlights and notes (' + all.length + ' urls)</p>'
   //search('')
 })
 
@@ -97,7 +98,7 @@ function search(q) {
     if (item.url.indexOf(q) !== -1 || item.title.indexOf(q) !== -1)
       res.push(item)
   }
-  results.innerHTML = '';
+  results.innerHTML = '<p>' + res.length + ' results</p>'
   for (let item of res) {
     let hit = document.createElement('div')
     let chunks = item.title.split('#__#')
@@ -108,9 +109,11 @@ function search(q) {
     for (let h of highlights) {
       if (h.selection.indexOf(q) !== -1)
         html.push(`<span>${bold(h.selection,q)}</span>`)
+      else
+      html.push(`<span>${h.selection}</span>`)
     }
     html = html.join('...')
-    hit.innerHTML = `<div class='res'><div class='title'>${bold(title,q)} </div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
+    hit.innerHTML = `<div class='res'><div class='title'><a href="${item.url}">${bold(title,q)}</a></div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
     results.appendChild(hit)
   }
 }

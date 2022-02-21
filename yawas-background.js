@@ -56,6 +56,27 @@ async function search(obj) {
   })
 }
 
+function subtree(res) {
+  let result = []
+  if (res.url > '')
+    result.push(res)
+  if (res.children) {
+    for (let c of res.children) {
+      result = result.concat(subtree(c))
+    }
+  }
+  return result
+}
+
+async function getYawasBookmarks() {
+  return new Promise((resolve,reject) => {
+    console.log(yawasBookmarkId)
+    chrome.bookmarks.getSubTree(yawasBookmarkId, res => {
+      resolve(subtree(res[0]))
+    })
+  })
+}
+
 /*
 chrome.bookmarks.search({}, async res => {
     res.forEach((item, i) => {
@@ -176,8 +197,9 @@ async function deleteYawasFolder() {
 
 async function importAllBookmarks(callback)
 {
-  let existing = await search({})
-  existing = existing.filter(item => item.url > '')
+  //let existing = await search({})
+  let existing = await getYawasBookmarks()
+  //existing = existing.filter(item => item.url > '')
   let existingUrls = {};
   for (let item of existing) {
     existingUrls[item.url] = true;

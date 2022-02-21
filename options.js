@@ -51,9 +51,29 @@ let importButton = document.getElementById('importChromeBookmarks');
 importButton.addEventListener('click', () => chrome.runtime.sendMessage({ msg: "startImportFunc" }));
 
 let searchButton = document.getElementById('searchChromeBookmarks');
-searchButton.addEventListener('click', () => chrome.tabs.create({url:chrome.extension.getURL('localsearch.html')}));
-
-chrome.runtime.onMessage.addListener(function requestCallback(request, sender, sendResponse) {
-  if (request.msg === 'importMessage')
-    importButton.textContent = request.n + ' imported';
+searchButton.addEventListener('click', () => {
+  chrome.tabs.create({url:chrome.extension.getURL('localsearch.html')})
+  window.close()
 });
+
+chrome.runtime.onMessage.addListener(async function requestCallback(request, sender, sendResponse) {
+  if (request.msg === 'fetch') {
+    try {
+      let res = await fetch(request.url);
+      console.log(res)
+    } catch (fetcherror) {
+      console.error(fetcherror)
+    }
+  }
+  if (request.msg === 'importMessage') {
+    if (request.error) {
+      importmessage.textContent = request.error
+      importButton.textContent = 'Import'
+    }
+    else {
+      importmessage.textContent = `imported ${request.n} bookmarks`;
+      importButton.textContent = request.n + ' imported';
+    }
+  }
+});
+

@@ -8,14 +8,12 @@ chrome.bookmarks.search({}, res => {
     }
   }
   all.sort((a,b) => a.dateAdded - b.dateAdded)
-  //query.placeholder = 'search ' + all.length + ' titles and highlights'
   results.innerHTML = '<p>search your yawas bookmarks by title, url, highlights and notes (' + all.length + ' urls)</p>'
-  //search('')
 })
 
-var leftMark = '<<';//'&ldquo;'
-var rightMark = '>>';//'&rdquo;'
-var lenQuote = rightMark.length;
+const leftMark = '<<';//'&ldquo;'
+const rightMark = '>>';//'&rdquo;'
+const lenQuote = rightMark.length;
 
 function annotationToArray(annotations)
 {

@@ -10,7 +10,7 @@ var rightMark = '>>';//'&rdquo;'
 var lenQuote = rightMark.length;
 var handlePDF = false;
 var saveLocally = false;
-var saveChromeBookmarks = false;
+var saveChromeBookmarks = true;
 var googleSignature = null;
 
 var yawasBookmarkId = null;
@@ -189,12 +189,19 @@ async function importAllBookmarks(callback)
   var n = 0;
   let max = 800;
   let importedUrls = new Set()
+
+  // Laurent: note that output=xml returns ALL bookmarks along with tags <label></label>
   while (loop)// && n <= max)
   {
     console.log('start=',start);
-    chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
     let urlBookmarks = 'https://www.google.com/bookmarks/lookup?output=rss&start=' + start;
-    let res = await fetch(urlBookmarks);
+    let res = null
+    try {
+      res = await fetch(urlBookmarks);
+    } catch (fetcherror) {
+      return callback(n,'error retrieving online google bookmarks')
+    }
+    chrome.runtime.sendMessage({ msg: "importMessage", start: start, n: n });
     let str = await res.text();
     let xml = (new window.DOMParser()).parseFromString(str, "text/xml");
     let items = xml.querySelectorAll('item');
@@ -209,6 +216,8 @@ async function importAllBookmarks(callback)
       }
       else {
         importedUrls.add(url);
+        //let labels = [...i.querySelectorAll('bkmk_label')].map(a => a.textContent).join(",");
+        //console.log(labels)
         let annotations = i.querySelector('bkmk_annotation')?i.querySelector('bkmk_annotation').textContent.trim():'';
         n++;
         let newTitle = title;
@@ -816,11 +825,8 @@ function annotationToArray(annotations)
 }
 
 async function startImport() {
-  importAllBookmarks(function (n) {
-    chrome.runtime.sendMessage({ msg: "importMessage", n: n });
-    setTimeout(() => {
-      alert('Import completed: ' + n + ' Google Bookmarks are now in your Chrome Bookmarks!');
-    },1000);
+  importAllBookmarks(function (n,error) {
+    chrome.runtime.sendMessage({ msg: "importMessage", n: n, error: error });
   });
 }
 

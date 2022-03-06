@@ -7,7 +7,7 @@ chrome.bookmarks.search({}, res => {
       all.push(item)
     }
   }
-  all.sort((a,b) => a.dateAdded - b.dateAdded)
+  all.sort((a,b) => b.dateAdded - a.dateAdded)
   results.innerHTML = '<p>search your yawas bookmarks by title, url, highlights and notes (' + all.length + ' urls)</p>'
 })
 

@@ -707,6 +707,12 @@ function highlightDoc(wnd,doc,highlights)
     return nremapped;
 }
 
+/*function whiteFont(element) {
+  let color = getComputedStyle(element).color
+  console.log(color)
+  return true
+}*/
+
 function highlightNowFirefox22(selectionrng,color,textcolor,doc, selectionstring,occurence,comment)
 {
     let baseNode = doc.createElement("yawas");//span was changing styling on some web pages
@@ -767,6 +773,9 @@ function yawas_highlight222(range, node,backgroundColor)
     var parent = before.parentNode;
     node.appendChild(docfrag);
     parent.insertBefore(node, before);
+    //if (whiteFont(startContainer.parentElement))
+    // make sure we can always read the text
+      node.style.color = 'black'
     return node;
 }
 

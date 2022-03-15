@@ -1,5 +1,4 @@
 var signedin = false;
-var highlightswrapper = document.querySelector('#yawas_highlightswrapper');
 var requestTimeout = 1000 * 5;  // 5 seconds
 var abortTimerId = null;
 var urls = {};
@@ -432,7 +431,7 @@ async function yawas_getAnnotations(webUrl,cb)
 
 function yawas_setStatusIcon(s)
 {
-    chrome.browserAction.setIcon({path:"yawas_" + s + "_128.png"});
+    chrome.action.setIcon({path:"yawas_" + s + "_128.png"});
 }
 
 function sendMessageActiveTab(json)
@@ -474,8 +473,8 @@ function yawas_remapAnnotations(url, annotations, labels,cb)
     cachedAnnotations[url] = annotations;
     cachedLabels[url] = labels;
     var highlights = annotationToArray(annotations);
-    chrome.browserAction.setBadgeText({'text':''+highlights.length});
-    chrome.browserAction.setTitle({title:'Yawas'});
+    chrome.action.setBadgeText({'text':''+highlights.length});
+    chrome.action.setTitle({title:'Yawas'});
     urls[url] = highlights.length;
     cb({annotations:highlights});
 }
@@ -559,8 +558,8 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumbe
      {
       yawas_setStatusIcon('on');
        var nannotations = webAnnotation.split(rightMark).length-1;
-       chrome.browserAction.setBadgeText({'text':''+nannotations});
-       chrome.browserAction.setTitle({title:'Yawas'});
+       chrome.action.setBadgeText({'text':''+nannotations});
+       chrome.action.setTitle({title:'Yawas'});
        urls[qurl] = nannotations;
        cachedAnnotations[qurl] = webAnnotation;
        return cb({addedhighlight:true,pureLen:pureLen});
@@ -665,11 +664,11 @@ function refreshBrowserAction(url)
     var qurl = purifyURL(url);
     if (urls[qurl] != undefined)
     {
-        chrome.browserAction.setBadgeText({'text':''+urls[qurl]});
+        chrome.action.setBadgeText({'text':''+urls[qurl]});
     }
     else
-        chrome.browserAction.setBadgeText({'text':'0'});
-    chrome.browserAction.setTitle({title:'Yawas'});
+        chrome.action.setBadgeText({'text':'0'});
+    chrome.action.setTitle({title:'Yawas'});
 }
 
 function copyTextToClipboard(text) {
@@ -739,31 +738,6 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     refreshBrowserAction(tab.url);
 });
 
-function getEmailHandler()
-{
-    return function(info, tab) {
-        var url = isPDF(tab.url);
-        var title = tab.title;
-        yawas_email(url,title);
-    };
-}
-
-function getCopyClipboardHandler()
-{
-  return function(info, tab) {
-    var url = isPDF(tab.url);
-    var title = tab.title;
-    yawas_copyclipboard(url,title);
-};
-}
-
-function getClickHandler() {
-  return function(info, tab) {
-    var color = info.menuItemId;
-    sendMessageActiveTab({action:'yawas_chrome',color:color,url:info.pageUrl});
-  };
-};
-
 function arrayToAnnotation(highlights)
 {
     var annotation = '';
@@ -785,7 +759,7 @@ function arrayToAnnotation(highlights)
 
 function annotationToArray(annotations)
 {
-    if (annotations === null)
+    if (!(annotations > ''))
       return [];
     if (annotations.trim().length === 0)
       return [];
@@ -1038,26 +1012,6 @@ function delHighlightNow(fragment,occurence,url,title,pagenumber,cb)
     }
 }
 
-
-/*function getDonateHandler() {
-    return function(info, tab) {
-        chrome.tabs.create({ url: donate_url});
-    };
-}*/
-
-function getDeleteHandler() {
-    return function(info, tab) {
-        sendMessageActiveTab({action:'yawas_delete_highlight'});
-    };
-}
-
-function getSearchHandler() {
-  return function(info, tab) {
-    //chrome.tabs.create({url:'https://www.google.com/bookmarks/?hl=en#!view=threadsmgmt&fo=Starred&q=&g=Time'});
-    chrome.tabs.create({url:chrome.extension.getURL('localsearch.html')});
-  };
-}
-
 function isPDF(href)
 {
     if (href.indexOf('pdf_viewer.html') === -1)
@@ -1068,16 +1022,6 @@ function isPDF(href)
     else
         return href;
 }
-function getEditHandler() {
-  return function(info, tab) {
-    let possiblePDFUrl = isPDF(info.pageUrl);
-    chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + encodeURIComponent(purifyURL(possiblePDFUrl)))});
-    /*if (saveLocally)
-      chrome.tabs.create({url:chrome.extension.getURL('localedit.html?url=' + purifyURL(possiblePDFUrl))});
-    else
-      chrome.tabs.create({url:"https://www.google.com/bookmarks/mark?op=edit&output=popup&bkmk=" + purifyURL(possiblePDFUrl) + "&title="  + tab.title});*/
-  };
-}
 
 /*chrome.contextMenus.create({
                            "id" : "donate",
@@ -1087,81 +1031,94 @@ function getEditHandler() {
                            "onclick" : getDonateHandler()
                          });*/
 
-chrome.contextMenus.create({
-                           "id" : "yellow",
-                           "title" : "Yellow",// (Ctrl-Shift-Y)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getClickHandler()
-                           });
-chrome.contextMenus.create({
-                           "id" : "red",
-                           "title" : "Red",// (Ctrl-Shift-R)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getClickHandler()
-                           });
-chrome.contextMenus.create({
-                           "id" : "blue",
-                           "title" : "Blue",// (Ctrl-Shift-B)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getClickHandler()
-                           });
-chrome.contextMenus.create({
-                           "id" : "green",
-                           "title" : "Green",// (Ctrl-Shift-G)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getClickHandler()
-                           });
+chrome.contextMenus.onClicked.addListener((info,tab) => {
+  if (info.menuItemId === 'delete')
+    sendMessageActiveTab({action:'yawas_delete_highlight'})
+  else if (info.menuItemId === 'copyclipboard') {
+    let url = isPDF(tab.url);
+    let title = tab.title;
+    yawas_copyclipboard(url,title);
+  } else if (info.menuItemId === 'email') {
+    let url = isPDF(tab.url);
+    let title = tab.title;
+    yawas_email(url,title);
+  } else if (info.menuItemId === 'search')
+    chrome.tabs.create({url:chrome.runtime.getURL('localsearch.html')});
+  else if (info.menuItemId === 'edit') {
+    let possiblePDFUrl = isPDF(info.pageUrl);
+    chrome.tabs.create({url:chrome.runtime.getURL('localedit.html?url=' + encodeURIComponent(purifyURL(possiblePDFUrl)))});
+  } else {
+    let color = info.menuItemId;
+    sendMessageActiveTab({action:'yawas_chrome',color:color,url:info.pageUrl});
+  }
+})
 
 chrome.contextMenus.create({
-                           "id" : "note",
-                           "title" : "Comment",// (Ctrl-Shift-C)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getClickHandler()
-                           });
+  "id" : "yellow",
+  "title" : "Yellow",// (Ctrl-Shift-Y)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
+chrome.contextMenus.create({
+  "id" : "red",
+  "title" : "Red",// (Ctrl-Shift-R)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
+chrome.contextMenus.create({
+  "id" : "blue",
+  "title" : "Blue",// (Ctrl-Shift-B)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
+chrome.contextMenus.create({
+  "id" : "green",
+  "title" : "Green",// (Ctrl-Shift-G)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
 
 chrome.contextMenus.create({
-                           "id" : "delete",
-                           "title" : "Delete",// (Ctrl-Shift-D)",
-                           "type" : "normal",
-                           "contexts" : ["selection"],
-                           "onclick" : getDeleteHandler()
-                           });
+  "id" : "note",
+  "title" : "Comment",// (Ctrl-Shift-C)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
 
 chrome.contextMenus.create({
-                           "id" : "copyclipboard",
-                           "title" : "Copy",
-                           "type" : "normal",
-                           "contexts" : ["page"],
-                           "onclick" : getCopyClipboardHandler()
-                           });
+  "id" : "delete",
+  "title" : "Delete",// (Ctrl-Shift-D)",
+  "type" : "normal",
+  "contexts" : ["selection"],
+});
 
 chrome.contextMenus.create({
-                           "id" : "email",
-                           "title" : "Email",
-                           "type" : "normal",
-                           "contexts" : ["page"],
-                           "onclick" : getEmailHandler()
-                           });
+  "id" : "copyclipboard",
+  "title" : "Copy",
+  "type" : "normal",
+  "contexts" : ["page"],
+});
 
 chrome.contextMenus.create({
-                           "id" : "search",
-                           "title" : "Search",
-                           "type" : "normal",
-                           "contexts" : ["page"],
-                           "onclick" : getSearchHandler()
-                           });
+  "id" : "email",
+  "title" : "Email",
+  "type" : "normal",
+  "contexts" : ["page"],
+});
+
 chrome.contextMenus.create({
-                           "id" : "edit",
-                           "title" : "Edit",
-                           "type" : "normal",
-                           "contexts" : ["page"],
-                           "onclick" : getEditHandler()
-                           });
+  "id" : "search",
+  "title" : "Search",
+  "type" : "normal",
+  "contexts" : ["page"],
+});
+
+chrome.contextMenus.create({
+  "id" : "edit",
+  "title" : "Edit",
+  "type" : "normal",
+  "contexts" : ["page"],
+});
 
 chrome.commands.onCommand.addListener(function(command) {
   if (command === 'yawas-yellow')

@@ -1,10 +1,10 @@
 {
   "name": "Yawas",
   "author": "Laurent Denoue",
-  "manifest_version": 2,
-  "version": "7.3.8",
+  "manifest_version": 3,
+  "version": "7.4.0",
   "description": "Highlight Web pages; stored in your browser bookmarks, searchable, and recreated automatically when you revisit a page",
-  "background": {"scripts": ["yawas-background.js"]},
+  "background": {"service_worker": "yawas-background.js"},
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
@@ -13,8 +13,12 @@
       "all_frames": true
     }
   ],
-  "permissions": ["https://www.google.com/bookmarks/*","storage","contextMenus","tabs","bookmarks"],
-  "browser_action": {
+  "web_accessible_resources": [{
+    "resources": ["localsearch.html","localedit.html"],
+    "matches": ["<all_urls>"]
+  }],
+  "permissions": ["activeTab","storage","contextMenus","tabs","bookmarks"],
+  "action": {
 		"default_title": "Yawas",
   	"default_icon": "yawas_on_128.png",
     "default_popup": "options.html"

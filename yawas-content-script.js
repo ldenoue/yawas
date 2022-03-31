@@ -914,12 +914,12 @@ else
         addStyle(window.document,'.yawas-highlight:hover{opacity:0.6;}.yawas-highlight[data-comment]{border-bottom:1px dashed black}');
         askForAnnotations(2000);
     }
-    var elems = document.querySelectorAll('*');
+    /*var elems = document.querySelectorAll('*');
     for (var i=0;i<elems.length;i++)
     {
         if (elems[i].style)
         {
             elems[i].style.userSelect='text';
         }
-    }
+    }*/
 }

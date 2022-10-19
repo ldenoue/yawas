@@ -194,7 +194,7 @@ async function deleteYawasFolder() {
   }
 }*/
 
-async function importAllBookmarks(callback)
+/*async function importAllBookmarks(callback)
 {
   //let existing = await search({})
   let existing = await getYawasBookmarks()
@@ -264,7 +264,7 @@ async function importAllBookmarks(callback)
   }
 
   callback(n);
-}
+}*/
 
 //let getannotationscb = {};
 //let storeannotationscb = {};
@@ -820,19 +820,19 @@ function annotationToArray(annotations)
     return highlights;
 }
 
-async function startImport() {
+/*async function startImport() {
   importAllBookmarks(function (n,error) {
     chrome.runtime.sendMessage({ msg: "importMessage", n: n, error: error });
   });
-}
+}*/
 
 function requestCallback(request, sender, sendResponse)
 {
   var tabURL = purifyURL(request.url);
   var tabTitle = request.title;
   //console.log('requestCallback',request);
-  if(request.msg == "startImportFunc")
-    startImport();
+  //if(request.msg == "startImportFunc")
+  //  startImport();
   if (request.fn === 'yawas_getAnnotations')
   {
     yawas_getAnnotations(request.url,function(res){

@@ -2,7 +2,7 @@
   "name": "Yawas",
   "author": "Laurent Denoue",
   "manifest_version": 3,
-  "version": "7.4.0",
+  "version": "7.4.1",
   "description": "Highlight Web pages; stored in your browser bookmarks, searchable, and recreated automatically when you revisit a page",
   "background": {"service_worker": "yawas-background.js"},
   "content_scripts": [

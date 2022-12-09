@@ -89,8 +89,6 @@ function bold(text,query) {
     return text;
 }
 function search(q) {
-  //chrome.bookmarks.search({}, res => {
-  //}
   let res = []
   for (let item of all) {
     if (item.url.indexOf(q) !== -1 || item.title.indexOf(q) !== -1)
@@ -126,5 +124,5 @@ document.getElementById('form').onsubmit = (evt) => {
   evt.preventDefault()
   evt.stopPropagation()
   if (query.value.trim() > '')
-    search(query.value.trim());
+    search(query.value.trim().toLowerCase());
 }

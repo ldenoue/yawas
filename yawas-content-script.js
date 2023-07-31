@@ -84,6 +84,8 @@ function contentScriptRequestCallback(request, sender, sendResponse) {
       yawas_chrome(request.color);
     else if (request.action === 'yawas_delete_highlight')
       yawas_delete_highlight();
+    else if (request.action === 'yawas_copytoclipboard')
+      yawas_copytoclipboard(request.payload);
   }
   if (sendResponse)
   {
@@ -92,6 +94,35 @@ function contentScriptRequestCallback(request, sender, sendResponse) {
   }
   return true; // important in case we need sendResponse asynchronously
 }
+
+function yawas_copytoclipboard(html) {
+
+  if(typeof ClipboardItem === "undefined") {
+    alert("Sorry! ClipboardItem not available in your browser.")
+    return;
+  }
+  
+  const type = "text/html";
+  const blob = new Blob([html], {type});
+  const data = [new ClipboardItem({[type]: blob})];
+
+  navigator.clipboard.write(data).then(function () {
+    alert('Yawas highlights copied to your clipboard!')
+  }, function (e) {
+    alert('error copying to clipboard')
+  });
+}
+
+/*function yawas_copytoclipboard(text) {
+  console.log('yawas_copytoclipboard',text)
+  var copyFrom = document.createElement("textarea");
+  copyFrom.textContent = text;
+  var body = document.getElementsByTagName('body')[0];
+  body.appendChild(copyFrom);
+  copyFrom.select();
+  document.execCommand('copy');
+  body.removeChild(copyFrom);
+}*/
 
 //chrome.runtime.onMessage.addListener(contentScriptRequestCallback);
 chrome.runtime.onConnect.addListener((port) => {

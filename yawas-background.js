@@ -672,31 +672,45 @@ function refreshBrowserAction(url)
 }
 
 function copyTextToClipboard(text) {
-  var copyFrom = document.createElement("textarea");
-  copyFrom.textContent = text;
-  var body = document.getElementsByTagName('body')[0];
-  body.appendChild(copyFrom);
-  copyFrom.select();
-  document.execCommand('copy');
-  body.removeChild(copyFrom);
-  //alert('Highlights are in your clipboard');
+  sendMessageActiveTab({action:'yawas_copytoclipboard',payload: text})
 }
 
-function yawas_copyclipboard(url,title)
+let googleColors = [];
+googleColors['yellow'] = 'yellow';
+googleColors['blue'] = '#0df';//'lightblue';
+googleColors['red'] = '#ff9999';
+googleColors['green'] = '#99ff99';
+googleColors['white'] = 'transparent';
+
+function yawas_copyclipboard(url,title, html = true)
 {
     url = purifyURL(url);
     if (title.trim().length == 0)
         title = 'no title';
     var webAnnotation = cachedAnnotations[url];
     var highlights = annotationToArray(webAnnotation);
-    var body = title + '\n' + url + '\n';
-    for (var i=0;i<highlights.length;i++)
-    {
-      if (highlights[i].comment)
-        body += highlights[i].comment + ' ';
-      body += '<<' + highlights[i].selection + '>>\n';
+    if (html) {
+      var body = '<a href="' + url + '">' + title + '</a><br>';
+      for (var i=0;i<highlights.length;i++)
+      {
+        //if (highlights[i].comment)
+        //  body += highlights[i].comment + ' ';
+        //body += '<<' + highlights[i].selection + '>>\n';
+        body += '<span style="background-color:' + googleColors[highlights[i].color] + '">' + highlights[i].selection + '</span><br>'
+      }
+      body += '<br>'
+      copyTextToClipboard(body);
+
+    } else {
+      var body = title + '\n' + url + '\n';
+      for (var i=0;i<highlights.length;i++)
+      {
+        if (highlights[i].comment)
+          body += highlights[i].comment + ' ';
+        body += '<<' + highlights[i].selection + '>>\n';
+      }
+      copyTextToClipboard(body);
     }
-    copyTextToClipboard(body);
 }
 
 function yawas_email(url,title)

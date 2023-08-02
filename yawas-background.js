@@ -676,8 +676,8 @@ function copyTextToClipboard(text) {
 }
 
 let googleColors = [];
-googleColors['yellow'] = 'yellow';
-googleColors['blue'] = '#0df';//'lightblue';
+googleColors['yellow'] = '#FFFF66';
+googleColors['blue'] = '#0df';
 googleColors['red'] = '#ff9999';
 googleColors['green'] = '#99ff99';
 googleColors['white'] = 'transparent';

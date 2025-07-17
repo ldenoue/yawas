@@ -29,29 +29,29 @@
   "commands": {
     "yawas-yellow": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Y",
-        "mac": "Alt+Shift+Y"
+        "default": "Alt+Y",
+        "mac": "Alt+Y"
       },
       "description": "Highlight Yellow"
     },
     "yawas-red": {
       "suggested_key": {
-        "default": "Ctrl+Shift+R",
-        "mac": "Alt+Shift+R"
+        "default": "Alt+R",
+        "mac": "Alt+R"
       },
       "description": "Highlight Red"
     },
     "yawas-blue": {
       "suggested_key": {
-        "default": "Ctrl+Shift+B",
-        "mac": "Alt+Shift+B"
+        "default": "Alt+B",
+        "mac": "Alt+B"
       },
       "description": "Highlight Blue"
     },
     "yawas-green": {
       "suggested_key": {
-        "default": "Ctrl+Shift+G",
-        "mac": "Alt+Shift+G"
+        "default": "Alt+G",
+        "mac": "Alt+G"
       },
       "description": "Highlight Green"
     },

@@ -32,34 +32,34 @@
         "default": "Ctrl+Shift+Y",
         "mac": "Alt+Shift+Y"
       },
-      "description": "Yawas Yellow"
+      "description": "Highlight Yellow"
     },
     "yawas-red": {
       "suggested_key": {
         "default": "Ctrl+Shift+R",
         "mac": "Alt+Shift+R"
       },
-      "description": "Yawas Red"
+      "description": "Highlight Red"
     },
     "yawas-blue": {
       "suggested_key": {
         "default": "Ctrl+Shift+B",
         "mac": "Alt+Shift+B"
       },
-      "description": "Yawas Blue"
+      "description": "Highlight Blue"
     },
     "yawas-green": {
       "suggested_key": {
         "default": "Ctrl+Shift+G",
         "mac": "Alt+Shift+G"
       },
-      "description": "Yawas Green"
+      "description": "Highlight Green"
     },
     "yawas-delete": {
-      "description": "Yawas Delete"
+      "description": "Delete Highlight/Comment"
     },
     "yawas-comment": {
-      "description": "Yawas Comment"
+      "description": "Add Highlight/Comment"
     }
   }
 }

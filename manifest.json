@@ -54,6 +54,12 @@
         "mac": "Alt+Shift+G"
       },
       "description": "Yawas Green"
+    },
+    "yawas-delete": {
+      "description": "Yawas Delete"
+    },
+    "yawas-comment": {
+      "description": "Yawas Comment"
     }
   }
 }

@@ -1,15 +1,4 @@
 let all = []
-chrome.bookmarks.search({}, res => {
-  for (let item of res) {
-    if (item.url > '') {
-      item.title = item.title.toLowerCase()
-      item.url = item.url.toLowerCase()
-      all.push(item)
-    }
-  }
-  all.sort((a,b) => b.dateAdded - a.dateAdded)
-  results.innerHTML = '<p>search your yawas bookmarks by title, url, highlights and notes (' + all.length + ' urls)</p>'
-})
 
 const leftMark = '<<';//'&ldquo;'
 const rightMark = '>>';//'&rdquo;'
@@ -82,6 +71,57 @@ function domain(url) {
   return new URL(url).hostname
 }
 
+function splitTitleAndAnnotations(title) {
+  let chunks = (title || '').split('#__#')
+  return {
+    title: chunks[0] || '',
+    annotations: chunks.length > 1 ? chunks.slice(1).join('#__#') : '',
+  }
+}
+
+function normalizeItem(item) {
+  let parsed = splitTitleAndAnnotations(item.title)
+  return {
+    displayTitle: parsed.title,
+    displayAnnotations: item.annotations !== undefined ? item.annotations : parsed.annotations,
+    title: (parsed.title || '').toLowerCase(),
+    url: (item.url || '').toLowerCase(),
+    rawUrl: item.url || '',
+    dateAdded: item.dateAdded || item.updatedAt || Date.now(),
+  }
+}
+
+function loadSearchIndex() {
+  chrome.storage.local.get(null, stored => {
+    let merged = {}
+    chrome.bookmarks.search({}, res => {
+      for (let item of res) {
+        if (item.url > '') {
+          merged[item.url] = normalizeItem(item)
+        }
+      }
+
+      for (let key in stored) {
+        let item = stored[key]
+        if (item && item.url) {
+          let mergedItem = merged[item.url] || normalizeItem({url:item.url,title:item.title || '',dateAdded:item.createdAt || item.updatedAt})
+          mergedItem.displayTitle = item.title || mergedItem.displayTitle
+          mergedItem.displayAnnotations = item.annotations || mergedItem.displayAnnotations
+          mergedItem.title = (mergedItem.displayTitle || '').toLowerCase()
+          mergedItem.url = item.url.toLowerCase()
+          mergedItem.rawUrl = item.url
+          mergedItem.dateAdded = item.updatedAt || item.createdAt || mergedItem.dateAdded
+          merged[item.url] = mergedItem
+        }
+      }
+
+      all = Object.values(merged)
+      all.sort((a,b) => b.dateAdded - a.dateAdded)
+      results.innerHTML = '<p>search your yawas bookmarks by title, url, highlights and notes (' + all.length + ' urls)</p>'
+    })
+  })
+}
+
 function bold(text,query) {
   if (query > '')
     return text.replaceAll(query,'<b>' + query + '</b>')
@@ -97,10 +137,9 @@ function search(q) {
   results.innerHTML = '<p>' + res.length + ' results</p>'
   for (let item of res) {
     let hit = document.createElement('div')
-    let chunks = item.title.split('#__#')
-    let title = chunks[0]
+    let title = item.displayTitle
     let date = new Date(item.dateAdded).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})
-    let highlights = annotationToArray(chunks[1]);
+    let highlights = annotationToArray(item.displayAnnotations);
     let html = []
     for (let h of highlights) {
       if (h.selection.indexOf(q) !== -1)
@@ -109,7 +148,7 @@ function search(q) {
       html.push(`<span>${h.selection}</span>`)
     }
     html = html.join('...')
-    hit.innerHTML = `<div class='res'><div class='title'><a href="${item.url}">${bold(title,q)}</a></div><div><a href="${item.url}">${domain(item.url)}</a> - ${date}</div><div>${html}</div>`
+    hit.innerHTML = `<div class='res'><div class='title'><a href="${item.rawUrl}">${bold(title,q)}</a></div><div><a href="${item.rawUrl}">${domain(item.rawUrl)}</a> - ${date}</div><div>${html}</div>`
     results.appendChild(hit)
   }
 }
@@ -126,3 +165,5 @@ document.getElementById('form').onsubmit = (evt) => {
   if (query.value.trim() > '')
     search(query.value.trim().toLowerCase());
 }
+
+loadSearchIndex()

@@ -55,6 +55,30 @@ async function search(obj) {
   })
 }
 
+async function getLocal(obj) {
+  return new Promise((resolve,reject) => {
+    chrome.storage.local.get(obj, res => resolve(res))
+  })
+}
+
+async function setLocal(obj) {
+  return new Promise((resolve,reject) => {
+    chrome.storage.local.set(obj, () => resolve())
+  })
+}
+
+function annotationStorageKey(webUrl) {
+  return purifyURL(webUrl).hashCode();
+}
+
+function splitTitleAndAnnotations(title) {
+  let chunks = (title || '').split('#__#');
+  return {
+    title: chunks[0] || '',
+    annotations: chunks.length > 1 ? chunks.slice(1).join('#__#') : '',
+  };
+}
+
 function subtree(res) {
   let result = []
   if (res.url > '')
@@ -111,6 +135,67 @@ async function createBookmark(obj,date) {
   let folder = await createFolder(year,month)
   //console.log(year,month,folder)
   await create({title:obj.title,url:obj.url,parentId: folder.id})
+}
+
+async function findYawasBookmarkByUrl(url) {
+  if (!yawasBookmarkId)
+    return null;
+  let bookmarks = await getYawasBookmarks();
+  return bookmarks.find(item => item.url === url) || null;
+}
+
+async function getStoredAnnotations(webUrl) {
+  let key = annotationStorageKey(webUrl);
+  let items = await getLocal({[key]: null});
+  return items[key];
+}
+
+async function storeAnnotations(webUrl, title, labels, annotations, extra = {}) {
+  let url = purifyURL(webUrl);
+  let key = annotationStorageKey(url);
+  let current = await getStoredAnnotations(url);
+  let record = Object.assign({}, current || {}, extra, {
+    url: url,
+    title: title,
+    labels: labels,
+    annotations: annotations,
+    updatedAt: Date.now(),
+  });
+  if (!record.createdAt)
+    record.createdAt = Date.now();
+  let obj = {};
+  obj[key] = record;
+  await setLocal(obj);
+  return record;
+}
+
+async function getBookmarkData(webUrl) {
+  let url = purifyURL(webUrl);
+  let record = await getStoredAnnotations(url);
+  let bookmark = await findYawasBookmarkByUrl(url);
+
+  if ((!record || !record.annotations) && bookmark) {
+    let parsed = splitTitleAndAnnotations(bookmark.title);
+    if (parsed.annotations) {
+      record = await storeAnnotations(url, parsed.title, '', parsed.annotations, {
+        createdAt: bookmark.dateAdded || Date.now(),
+      });
+    }
+  }
+
+  if (!record && bookmark) {
+    let parsed = splitTitleAndAnnotations(bookmark.title);
+    record = {
+      url: url,
+      title: parsed.title,
+      labels: '',
+      annotations: parsed.annotations,
+      createdAt: bookmark.dateAdded || Date.now(),
+      updatedAt: bookmark.dateAdded || Date.now(),
+    };
+  }
+
+  return {url, record, bookmark};
 }
 
 chrome.runtime.onMessage.addListener(requestCallback);
@@ -299,17 +384,13 @@ function clearAbortTimer() {
 
 async function yawas_getAnnotations_chrome_bookmarks(webUrl,cb)
 {
-  let url = purifyURL(webUrl);
-  let result = await search({url:url})
-  //console.log(result)
-  let annotations = '';
-  let labels = '';
-  result.forEach((item, i) => {
-    let chunks = item.title.split('#__#');
-    if (chunks.length > 1) {
-      annotations += chunks[1];
-    }
-  });
+  let {record, bookmark} = await getBookmarkData(webUrl);
+  let annotations = record && record.annotations ? record.annotations : '';
+  let labels = record && record.labels ? record.labels : '';
+  if (!annotations && bookmark) {
+    let parsed = splitTitleAndAnnotations(bookmark.title);
+    annotations = parsed.annotations;
+  }
   if (annotations.length > 0) {
     yawas_remapAnnotations(webUrl,annotations,labels,cb);
   }
@@ -588,13 +669,12 @@ async function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooS
     {
       let url = purifyURL(webUrl)
       let obj = {url: url, title: title + '#__#' + annotations};
-      var folderName = new Date().toLocaleDateString('en-US',{year:'numeric',month:'short'})
-      //console.log('obj=',obj);
-      let result = await search({url:url})
-      if (result && result.length > 0)
+      await storeAnnotations(url, title, labels, annotations);
+      let bookmark = await findYawasBookmarkByUrl(url)
+      if (bookmark)
       {
         console.log('updating bookmark')
-        chrome.bookmarks.update(result[0].id,obj);
+        chrome.bookmarks.update(bookmark.id,obj);
       } else {
         console.log('creating bookmark')
         createBookmark(obj,new Date())
@@ -903,6 +983,25 @@ function requestCallback(request, sender, sendResponse)
     updateHighlight(request.highlightString,request.n,request.newcolor,'',request.url,request.title,request.p,function(res){
       sendResponse(res);
     });
+  else if (request.action == 'get_yawas_bookmark_data')
+    getBookmarkData(request.url).then(({record, bookmark, url}) => {
+      sendResponse({ok:true, url:url, record:record, bookmarkId: bookmark ? bookmark.id : null});
+    });
+  else if (request.action == 'save_yawas_bookmark_data')
+    (async () => {
+      let url = purifyURL(request.url);
+      let title = request.title || '';
+      let annotations = request.annotations || '';
+      await storeAnnotations(url, title, '', annotations);
+      let bookmark = await findYawasBookmarkByUrl(url);
+      let obj = {url:url,title:title + '#__#' + annotations};
+      if (bookmark)
+        chrome.bookmarks.update(bookmark.id,obj, () => sendResponse({ok:true}));
+      else {
+        await createBookmark(obj,new Date());
+        sendResponse({ok:true});
+      }
+    })();
 
   // important: we want to use sendResponse asynchronously sometimes (e.g. fetching annotations using XHR)
   return true;

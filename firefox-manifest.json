@@ -1,0 +1,72 @@
+{
+  "name": "Yawas",
+  "author": "Laurent Denoue",
+  "manifest_version": 3,
+  "version": "7.4.2",
+  "description": "Highlight Web pages; stored in your browser bookmarks, searchable, and recreated automatically when you revisit a page",
+  "background": {
+    "scripts": ["yawas-background.js"]
+  },
+  "id": "84b703a4-eaff-4208-9cee-12c0623056c1",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{84b703a4-eaff-4208-9cee-12c0623056c1}",
+      "strict_min_version": "58.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "*://*.slack.com/*",
+        "*://web.whatsapp.com/*",
+        "*://www.google.com/bookmarks/*",
+        "*://accounts.google.com/*"
+      ],
+      "js": ["yawas-content-script.js"],
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [{
+    "resources": ["localsearch.html","localedit.html"],
+    "matches": ["<all_urls>"]
+  }],
+  "permissions": ["activeTab","storage","contextMenus","tabs","bookmarks"],
+  "action": {
+    "default_title": "Yawas",
+    "default_icon": "yawas_on_128.png",
+    "default_popup": "options.html"
+  },
+  "browser_action": {
+    "default_title": "Yawas",
+    "default_icon": "yawas_on_128.png",
+    "default_popup": "options.html"
+  },
+  "icons": {
+    "128": "yawas_on_128.png"
+  },
+  "commands": {
+    "yawas-yellow": {
+      "suggested_key": { "default": "Alt+Y", "mac": "Alt+Y" },
+      "description": "Highlight Yellow"
+    },
+    "yawas-red": {
+      "suggested_key": { "default": "Alt+R", "mac": "Alt+R" },
+      "description": "Highlight Red"
+    },
+    "yawas-blue": {
+      "suggested_key": { "default": "Alt+B", "mac": "Alt+B" },
+      "description": "Highlight Blue"
+    },
+    "yawas-green": {
+      "suggested_key": { "default": "Alt+G", "mac": "Alt+G" },
+      "description": "Highlight Green"
+    },
+    "yawas-delete": {
+      "description": "Delete Highlight/Comment"
+    },
+    "yawas-comment": {
+      "description": "Add Highlight/Comment"
+    }
+  }
+}

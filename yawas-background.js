@@ -13,19 +13,59 @@ var saveChromeBookmarks = true;
 var googleSignature = null;
 
 var yawasBookmarkId = null;
+var annotationWriteLocks = {};
 
-chrome.bookmarks.search({title:'Yawas'}, res => {
-  if (res.length > 0) {
-    yawasBookmarkId = res[0].id;
-    console.log('yawasBookmarkId=',yawasBookmarkId)
+ensureYawasFolder();
+
+async function getBookmark(id) {
+  return new Promise((resolve,reject) => {
+    chrome.bookmarks.get(id, res => resolve(res && res[0] ? res[0] : null))
+  })
+}
+
+async function getChildren(id) {
+  return new Promise((resolve,reject) => {
+    chrome.bookmarks.getChildren(id, res => resolve(res || []))
+  })
+}
+
+async function updateBookmark(id, obj) {
+  return new Promise((resolve,reject) => {
+    chrome.bookmarks.update(id,obj,res => resolve(res))
+  })
+}
+
+async function ensureYawasFolder() {
+  if (yawasBookmarkId) {
+    let existing = await getBookmark(yawasBookmarkId);
+    if (existing && !existing.url && existing.title === 'Yawas')
+      return existing;
+    yawasBookmarkId = null;
   }
-  else {
-    chrome.bookmarks.create({title:'Yawas'}, newfolder => {
-      yawasBookmarkId = newfolder.id;
-      console.log('yawasBookmarkId=',yawasBookmarkId)
-    })
+
+  let res = await search({title:'Yawas'});
+  let folder = res.find(item => !item.url && item.title === 'Yawas');
+  if (!folder)
+    folder = await create({title:'Yawas'});
+
+  yawasBookmarkId = folder.id;
+  console.log('yawasBookmarkId=',yawasBookmarkId)
+  return folder;
+}
+
+async function withAnnotationLock(url, fn) {
+  let qurl = purifyURL(url);
+  let previous = annotationWriteLocks[qurl] || Promise.resolve();
+  let current = previous.catch(() => {}).then(fn);
+  annotationWriteLocks[qurl] = current;
+  try {
+    return await current;
   }
-})
+  finally {
+    if (annotationWriteLocks[qurl] === current)
+      delete annotationWriteLocks[qurl];
+  }
+}
 
 function getFolderName(url,dateString) {
   let res = 'unknown'
@@ -67,6 +107,12 @@ async function setLocal(obj) {
   })
 }
 
+async function removeLocal(key) {
+  return new Promise((resolve,reject) => {
+    chrome.storage.local.remove(key, () => resolve())
+  })
+}
+
 function annotationStorageKey(webUrl) {
   return purifyURL(webUrl).hashCode();
 }
@@ -77,6 +123,28 @@ function splitTitleAndAnnotations(title) {
     title: chunks[0] || '',
     annotations: chunks.length > 1 ? chunks.slice(1).join('#__#') : '',
   };
+}
+
+function mergeAnnotationStrings(annotationStrings) {
+  let merged = [];
+  let seen = {};
+  for (let annotations of annotationStrings) {
+    let highlights = annotationToArray(annotations);
+    for (let highlight of highlights) {
+      let key = [
+        highlight.selection,
+        highlight.n,
+        highlight.p,
+        highlight.color,
+        highlight.comment
+      ].join('\u0000');
+      if (!seen[key]) {
+        seen[key] = true;
+        merged.push(highlight);
+      }
+    }
+  }
+  return arrayToAnnotation(merged);
 }
 
 function subtree(res) {
@@ -93,9 +161,15 @@ function subtree(res) {
 
 async function getYawasBookmarks() {
   return new Promise((resolve,reject) => {
-    console.log(yawasBookmarkId)
-    chrome.bookmarks.getSubTree(yawasBookmarkId, res => {
-      resolve(subtree(res[0]))
+    ensureYawasFolder().then(() => {
+      console.log(yawasBookmarkId)
+      chrome.bookmarks.getSubTree(yawasBookmarkId, res => {
+        if (!res || !res[0])
+          return resolve([])
+        resolve(subtree(res[0]))
+      })
+    }).catch(() => {
+      resolve([])
     })
   })
 }
@@ -114,12 +188,14 @@ async function create(obj) {
 }
 
 async function folderExists(name,parentId) {
+  await ensureYawasFolder()
   parentId = parentId ? parentId : yawasBookmarkId
-  let res = await search({title:name})
-  return res.find(f => f.parentId === parentId)
+  let children = await getChildren(parentId)
+  return children.find(f => !f.url && f.title === name)
 }
 
 async function createFolder(year,month) {
+  await ensureYawasFolder()
   let yearFolder = await folderExists(year)
   if (!yearFolder)
     yearFolder = await create({title:year,parentId: yawasBookmarkId})
@@ -130,18 +206,27 @@ async function createFolder(year,month) {
 }
 
 async function createBookmark(obj,date) {
+  if (!date)
+    date = new Date()
   let year = ''+date.getFullYear()
   let month = date.toLocaleDateString('en-US',{month:'long'})
   let folder = await createFolder(year,month)
   //console.log(year,month,folder)
-  await create({title:obj.title,url:obj.url,parentId: folder.id})
+  return await create({title:obj.title,url:obj.url,parentId: folder.id})
+}
+
+async function findYawasBookmarksByUrl(url) {
+  if (!yawasBookmarkId)
+    await ensureYawasFolder();
+  let bookmarks = await getYawasBookmarks();
+  return bookmarks
+    .filter(item => item.url === url)
+    .sort((a,b) => (a.dateAdded || 0) - (b.dateAdded || 0));
 }
 
 async function findYawasBookmarkByUrl(url) {
-  if (!yawasBookmarkId)
-    return null;
-  let bookmarks = await getYawasBookmarks();
-  return bookmarks.find(item => item.url === url) || null;
+  let bookmarks = await findYawasBookmarksByUrl(url);
+  return bookmarks[0] || null;
 }
 
 async function getStoredAnnotations(webUrl) {
@@ -172,7 +257,36 @@ async function storeAnnotations(webUrl, title, labels, annotations, extra = {}) 
 async function getBookmarkData(webUrl) {
   let url = purifyURL(webUrl);
   let record = await getStoredAnnotations(url);
-  let bookmark = await findYawasBookmarkByUrl(url);
+  let bookmarks = await findYawasBookmarksByUrl(url);
+  let bookmark = bookmarks[0] || null;
+
+  if (bookmarks.length > 1) {
+    let title = '';
+    let annotationsToMerge = [];
+    if (record && record.annotations)
+      annotationsToMerge.push(record.annotations);
+    for (let item of bookmarks) {
+      let parsed = splitTitleAndAnnotations(item.title);
+      if (!title)
+        title = parsed.title;
+      if (parsed.annotations)
+        annotationsToMerge.push(parsed.annotations);
+    }
+    let annotations = mergeAnnotationStrings(annotationsToMerge);
+    let obj = {url: url, title: title + '#__#' + annotations};
+    await updateBookmark(bookmark.id, obj);
+    for (let i=1;i<bookmarks.length;i++)
+      await remove(bookmarks[i].id);
+    bookmark = Object.assign({}, bookmark, obj);
+    record = await storeAnnotations(url, title, record && record.labels ? record.labels : '', annotations, {
+      createdAt: bookmark.dateAdded || Date.now(),
+    });
+  }
+
+  if (record && !bookmark) {
+    await removeLocal(annotationStorageKey(url));
+    record = null;
+  }
 
   if ((!record || !record.annotations) && bookmark) {
     let parsed = splitTitleAndAnnotations(bookmark.title);
@@ -393,6 +507,10 @@ async function yawas_getAnnotations_chrome_bookmarks(webUrl,cb)
   }
   if (annotations.length > 0) {
     yawas_remapAnnotations(webUrl,annotations,labels,cb);
+  } else {
+    delete cachedAnnotations[purifyURL(webUrl)];
+    delete cachedLabels[purifyURL(webUrl)];
+    cb({noannotation:true});
   }
 }
 
@@ -590,67 +708,88 @@ function yawas_compact(webAnnotation)
 function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,pagenumber,cb)
 {
     var qurl = purifyURL(webUrl);
-
-    // new version uses cache and google signature
-    var webAnnotation = cachedAnnotations[qurl];
-    var webLabels = cachedLabels[qurl];
-    if (!webAnnotation)
-    {
-        //console.error('no webannotation cached for',webUrl,qurl);
-        webAnnotation = '';
-    }
-    if (!webLabels)
-        webLabels = '';
-    webAnnotation = formatAnnotation(webAnnotation);
-    if (occurence === 0)
-    {
-        if (pagenumber)
-            webAnnotation += leftMark + highlight + "@" + occurence + ',' + pagenumber;
-        else
-            webAnnotation += leftMark + highlight;
-    }
-    else
-    {
-        webAnnotation += leftMark + highlight + "@" + occurence;
-        if (pagenumber)
-            webAnnotation += ',' + pagenumber;
-    }
-    if (couleur != 'yellow')
-        webAnnotation += '#' + couleur;
-    webAnnotation += rightMark + " ";
-    let pureLen = webAnnotation.length;
-    if (!saveChromeBookmarks && webAnnotation.length > 2048)
-    {
-    	console.log('too long so compacting annotations',qurl,webAnnotation.length);
-    	var compacted = yawas_compact(webAnnotation);
-    	if (compacted.length > 2048)
-    	{
-    	  yawas_setStatusIcon('error');
-      	return cb({toobig:true});
+    withAnnotationLock(qurl, async () => {
+      // new version uses cache and google signature
+      var webAnnotation = cachedAnnotations[qurl];
+      var webLabels = cachedLabels[qurl];
+      if (!webAnnotation && saveChromeBookmarks)
+      {
+        let {record, bookmark} = await getBookmarkData(qurl);
+        if (record && record.annotations)
+        {
+          webAnnotation = record.annotations;
+          webLabels = record.labels || '';
+        }
+        else if (bookmark)
+        {
+          let parsed = splitTitleAndAnnotations(bookmark.title);
+          webAnnotation = parsed.annotations;
+        }
+      }
+      if (!webAnnotation)
+      {
+          //console.error('no webannotation cached for',webUrl,qurl);
+          webAnnotation = '';
+      }
+      if (!webLabels)
+          webLabels = '';
+      webAnnotation = formatAnnotation(webAnnotation);
+      if (occurence === 0)
+      {
+          if (pagenumber)
+              webAnnotation += leftMark + highlight + "@" + occurence + ',' + pagenumber;
+          else
+              webAnnotation += leftMark + highlight;
       }
       else
       {
-      	console.log('compacted format len=',compacted.length);
-      	webAnnotation = compacted;
+          webAnnotation += leftMark + highlight + "@" + occurence;
+          if (pagenumber)
+              webAnnotation += ',' + pagenumber;
       }
-    }
-    yawas_storeHighlightsNow(qurl, title, webLabels, webAnnotation, googleSignature, function (res){
-     if (res.ok)
-     {
-      yawas_setStatusIcon('on');
-       var nannotations = webAnnotation.split(rightMark).length-1;
-       chrome.action.setBadgeText({'text':''+nannotations});
-       chrome.action.setTitle({title:'Yawas'});
-       urls[qurl] = nannotations;
-       cachedAnnotations[qurl] = webAnnotation;
-       return cb({addedhighlight:true,pureLen:pureLen});
-     }
-     else
-     {
-        yawas_setStatusIcon('error');
-        return cb(res);
-     }
-   });
+      if (couleur != 'yellow')
+          webAnnotation += '#' + couleur;
+      webAnnotation += rightMark + " ";
+      let pureLen = webAnnotation.length;
+      if (!saveChromeBookmarks && webAnnotation.length > 2048)
+      {
+        console.log('too long so compacting annotations',qurl,webAnnotation.length);
+        var compacted = yawas_compact(webAnnotation);
+        if (compacted.length > 2048)
+        {
+          yawas_setStatusIcon('error');
+          return cb({toobig:true});
+        }
+        else
+        {
+          console.log('compacted format len=',compacted.length);
+          webAnnotation = compacted;
+        }
+      }
+      await new Promise(resolve => {
+        yawas_storeHighlightsNow(qurl, title, webLabels, webAnnotation, googleSignature, function (res){
+         if (res.ok)
+         {
+          yawas_setStatusIcon('on');
+           var nannotations = webAnnotation.split(rightMark).length-1;
+           chrome.action.setBadgeText({'text':''+nannotations});
+           chrome.action.setTitle({title:'Yawas'});
+           urls[qurl] = nannotations;
+           cachedAnnotations[qurl] = webAnnotation;
+           cb({addedhighlight:true,pureLen:pureLen});
+         }
+         else
+         {
+            yawas_setStatusIcon('error');
+            cb(res);
+         }
+         resolve();
+       });
+      });
+    }).catch(error => {
+      yawas_setStatusIcon('error');
+      cb({error: error && error.message ? error.message : '' + error});
+    });
 }
 
 async function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooSignature, callback)
@@ -674,10 +813,10 @@ async function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooS
       if (bookmark)
       {
         console.log('updating bookmark')
-        chrome.bookmarks.update(bookmark.id,obj);
+        await updateBookmark(bookmark.id,obj);
       } else {
         console.log('creating bookmark')
-        createBookmark(obj,new Date())
+        await createBookmark(obj,new Date())
       }
       callback({ok:true});
       return;
@@ -996,7 +1135,10 @@ function requestCallback(request, sender, sendResponse)
       let bookmark = await findYawasBookmarkByUrl(url);
       let obj = {url:url,title:title + '#__#' + annotations};
       if (bookmark)
-        chrome.bookmarks.update(bookmark.id,obj, () => sendResponse({ok:true}));
+      {
+        await updateBookmark(bookmark.id,obj);
+        sendResponse({ok:true});
+      }
       else {
         await createBookmark(obj,new Date());
         sendResponse({ok:true});

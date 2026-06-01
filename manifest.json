@@ -55,6 +55,39 @@
       },
       "description": "Highlight Green"
     },
+    "yawas-khaki": {
+      "description": "Highlight Khaki"
+    },
+    "yawas-chartreuse": {
+      "description": "Highlight Chartreuse"
+    },
+    "yawas-scarlet": {
+      "description": "Highlight Scarlet"
+    },
+    "yawas-gold": {
+      "description": "Highlight Gold"
+    },
+    "yawas-aqua": {
+      "description": "Highlight Aqua"
+    },
+    "yawas-teal": {
+      "description": "Highlight Teal"
+    },
+    "yawas-lilac": {
+      "description": "Highlight Lilac"
+    },
+    "yawas-orange": {
+      "description": "Highlight Orange"
+    },
+    "yawas-pink": {
+      "description": "Highlight Pink"
+    },
+    "yawas-grey": {
+      "description": "Highlight Grey"
+    },
+    "yawas-magenta": {
+      "description": "Highlight Magenta"
+    },
     "yawas-delete": {
       "description": "Delete Highlight/Comment"
     },

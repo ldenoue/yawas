@@ -13,6 +13,17 @@ googleColors['yellow'] = '#FFFF66';
 googleColors['blue'] = '#0df';
 googleColors['red'] = '#ff9999';
 googleColors['green'] = '#99ff99';
+googleColors['khaki'] = '#c7c78d';
+googleColors['chartreuse'] = '#ddff77';
+googleColors['scarlet'] = '#ff6666';
+googleColors['gold'] = '#ffcc01';
+googleColors['aqua'] = '#a6ffff';
+googleColors['teal'] = '#98cbcb';
+googleColors['lilac'] = '#d9b3ff';
+googleColors['orange'] = '#ffd8a4';
+googleColors['pink'] = '#ffc4ff';
+googleColors['grey'] = '#c0c0c0';
+googleColors['magenta'] = '#ff00ff';
 googleColors['white'] = 'transparent';
 var notRemapped = [];
 

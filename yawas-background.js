@@ -14,6 +14,23 @@ var googleSignature = null;
 
 var yawasBookmarkId = null;
 var annotationWriteLocks = {};
+var highlightColors = [
+  {id:'yellow', title:'Yellow', hex:'#FFFF66'},
+  {id:'red', title:'Red', hex:'#ff9999'},
+  {id:'blue', title:'Blue', hex:'#0df'},
+  {id:'green', title:'Green', hex:'#99ff99'},
+  {id:'khaki', title:'Khaki', hex:'#c7c78d'},
+  {id:'chartreuse', title:'Chartreuse', hex:'#ddff77'},
+  {id:'scarlet', title:'Scarlet', hex:'#ff6666'},
+  {id:'gold', title:'Gold', hex:'#ffcc01'},
+  {id:'aqua', title:'Aqua', hex:'#a6ffff'},
+  {id:'teal', title:'Teal', hex:'#98cbcb'},
+  {id:'lilac', title:'Lilac', hex:'#d9b3ff'},
+  {id:'orange', title:'Orange', hex:'#ffd8a4'},
+  {id:'pink', title:'Pink', hex:'#ffc4ff'},
+  {id:'grey', title:'Grey', hex:'#c0c0c0'},
+  {id:'magenta', title:'Magenta', hex:'#ff00ff'}
+];
 
 ensureYawasFolder();
 
@@ -895,10 +912,7 @@ function copyTextToClipboard(text) {
 }
 
 let googleColors = [];
-googleColors['yellow'] = '#FFFF66';
-googleColors['blue'] = '#0df';
-googleColors['red'] = '#ff9999';
-googleColors['green'] = '#99ff99';
+highlightColors.forEach(color => googleColors[color.id] = color.hex);
 googleColors['white'] = 'transparent';
 
 function yawas_copyclipboard(url,title, html = true)
@@ -1308,29 +1322,13 @@ chrome.contextMenus.onClicked.addListener((info,tab) => {
   }
 })
 
-chrome.contextMenus.create({
-  "id" : "yellow",
-  "title" : "Yellow",// (Ctrl-Shift-Y)",
-  "type" : "normal",
-  "contexts" : ["selection"],
-});
-chrome.contextMenus.create({
-  "id" : "red",
-  "title" : "Red",// (Ctrl-Shift-R)",
-  "type" : "normal",
-  "contexts" : ["selection"],
-});
-chrome.contextMenus.create({
-  "id" : "blue",
-  "title" : "Blue",// (Ctrl-Shift-B)",
-  "type" : "normal",
-  "contexts" : ["selection"],
-});
-chrome.contextMenus.create({
-  "id" : "green",
-  "title" : "Green",// (Ctrl-Shift-G)",
-  "type" : "normal",
-  "contexts" : ["selection"],
+highlightColors.forEach(color => {
+  chrome.contextMenus.create({
+    "id" : color.id,
+    "title" : color.title,
+    "type" : "normal",
+    "contexts" : ["selection"],
+  });
 });
 
 chrome.contextMenus.create({
@@ -1376,17 +1374,11 @@ chrome.contextMenus.create({
 });
 
 chrome.commands.onCommand.addListener(function(command) {
-  if (command === 'yawas-yellow')
-    sendMessageActiveTab({action:'yawas_chrome',color:'yellow'});
-  else if (command === 'yawas-red')
-    sendMessageActiveTab({action:'yawas_chrome',color:'red'});
-  else if (command === 'yawas-blue')
-    sendMessageActiveTab({action:'yawas_chrome',color:'blue'});
-  else if (command === 'yawas-green')
-    sendMessageActiveTab({action:'yawas_chrome',color:'green'});
+  if (command.indexOf('yawas-') === 0 && highlightColors.find(color => command === 'yawas-' + color.id))
+    sendMessageActiveTab({action:'yawas_chrome',color:command.substring('yawas-'.length)});
   else if (command === 'yawas-delete')
     sendMessageActiveTab({action:'yawas_delete_highlight'});
-  else if (command === 'yawas-note')
+  else if (command === 'yawas-comment')
     sendMessageActiveTab({action:'yawas_chrome',color:'note'});
 });
 

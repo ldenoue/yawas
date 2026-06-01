@@ -14,6 +14,8 @@ var googleSignature = null;
 
 var yawasBookmarkId = null;
 var annotationWriteLocks = {};
+var flatBookmarkMigrationPromise = null;
+var flatBookmarkMigrationKey = 'yawas-flat-bookmark-migration-v1';
 var highlightColors = [
   {id:'yellow', title:'Yellow', hex:'#FFFF66'},
   {id:'red', title:'Red', hex:'#ff9999'},
@@ -33,7 +35,6 @@ var highlightColors = [
 ];
 
 ensureYawasFolder();
-moveFlatYawasBookmarksToUnsorted();
 
 async function getBookmark(id) {
   return new Promise((resolve,reject) => {
@@ -203,7 +204,7 @@ function subtree(res) {
 
 async function getYawasBookmarks() {
   return new Promise((resolve,reject) => {
-    ensureYawasFolder().then(() => {
+    runFlatBookmarkMigrationOnce().then(() => {
       console.log(yawasBookmarkId)
       chrome.bookmarks.getSubTree(yawasBookmarkId, res => {
         if (!res || !res[0])
@@ -268,6 +269,22 @@ async function moveFlatYawasBookmarksToUnsorted() {
   } catch (e) {
     console.error('error moving flat YAWAS bookmarks to Unsorted',e);
   }
+}
+
+async function runFlatBookmarkMigrationOnce() {
+  if (flatBookmarkMigrationPromise)
+    return flatBookmarkMigrationPromise;
+  flatBookmarkMigrationPromise = (async () => {
+    let items = await getLocal({[flatBookmarkMigrationKey]: false});
+    if (items[flatBookmarkMigrationKey])
+    {
+      await ensureYawasFolder();
+      return;
+    }
+    await moveFlatYawasBookmarksToUnsorted();
+    await setLocal({[flatBookmarkMigrationKey]: true});
+  })();
+  return flatBookmarkMigrationPromise;
 }
 
 async function removeEmptyFolders(folderId, keepFolderId) {

@@ -33,6 +33,7 @@ var highlightColors = [
 ];
 
 ensureYawasFolder();
+moveFlatYawasBookmarksToUnsorted();
 
 async function getBookmark(id) {
   return new Promise((resolve,reject) => {
@@ -49,6 +50,12 @@ async function getChildren(id) {
 async function updateBookmark(id, obj) {
   return new Promise((resolve,reject) => {
     chrome.bookmarks.update(id,obj,res => resolve(res))
+  })
+}
+
+async function moveBookmark(id, obj) {
+  return new Promise((resolve,reject) => {
+    chrome.bookmarks.move(id,obj,res => resolve(res))
   })
 }
 
@@ -240,6 +247,42 @@ async function createFolder(year,month) {
   return monthFolder
 }
 
+async function ensureUnsortedFolder() {
+  await ensureYawasFolder();
+  let folder = await folderExists('Unsorted');
+  if (!folder)
+    folder = await create({title:'Unsorted',parentId: yawasBookmarkId});
+  return folder;
+}
+
+async function moveFlatYawasBookmarksToUnsorted() {
+  try {
+    await ensureYawasFolder();
+    let unsorted = await ensureUnsortedFolder();
+    let children = await getChildren(yawasBookmarkId);
+    for (let item of children) {
+      if (item.url && item.parentId !== unsorted.id)
+        await moveBookmark(item.id,{parentId: unsorted.id});
+    }
+    await removeEmptyFolders(yawasBookmarkId, unsorted.id);
+  } catch (e) {
+    console.error('error moving flat YAWAS bookmarks to Unsorted',e);
+  }
+}
+
+async function removeEmptyFolders(folderId, keepFolderId) {
+  let children = await getChildren(folderId);
+  for (let item of children) {
+    if (!item.url)
+      await removeEmptyFolders(item.id, keepFolderId);
+  }
+  if (folderId === yawasBookmarkId || folderId === keepFolderId)
+    return;
+  children = await getChildren(folderId);
+  if (children.length === 0)
+    await remove(folderId);
+}
+
 async function createBookmark(obj,date) {
   if (!date)
     date = new Date()
@@ -248,6 +291,18 @@ async function createBookmark(obj,date) {
   let folder = await createFolder(year,month)
   //console.log(year,month,folder)
   return await create({title:obj.title,url:obj.url,parentId: folder.id})
+}
+
+async function ensureBookmarkDateFolder(bookmark) {
+  if (!bookmark)
+    return bookmark;
+  let date = bookmark.dateAdded ? new Date(bookmark.dateAdded) : new Date();
+  let year = ''+date.getFullYear();
+  let month = date.toLocaleDateString('en-US',{month:'long'});
+  let folder = await createFolder(year,month);
+  if (bookmark.parentId === folder.id)
+    return bookmark;
+  return await moveBookmark(bookmark.id,{parentId: folder.id});
 }
 
 async function findYawasBookmarksByUrl(url) {
@@ -310,6 +365,7 @@ async function getBookmarkData(webUrl) {
     let annotations = mergeAnnotationStrings(annotationsToMerge);
     let obj = {url: url, title: title + '#__#' + annotations};
     await updateBookmark(bookmark.id, obj);
+    bookmark = await ensureBookmarkDateFolder(bookmark);
     for (let i=1;i<bookmarks.length;i++)
       await remove(bookmarks[i].id);
     bookmark = Object.assign({}, bookmark, obj);
@@ -849,6 +905,7 @@ async function yawas_storeHighlightsNow(webUrl, title, labels, annotations, gooS
       {
         console.log('updating bookmark')
         await updateBookmark(bookmark.id,obj);
+        await ensureBookmarkDateFolder(bookmark);
       } else {
         console.log('creating bookmark')
         await createBookmark(obj,new Date())
@@ -1169,6 +1226,7 @@ function requestCallback(request, sender, sendResponse)
       if (bookmark)
       {
         await updateBookmark(bookmark.id,obj);
+        await ensureBookmarkDateFolder(bookmark);
         sendResponse({ok:true});
       }
       else {

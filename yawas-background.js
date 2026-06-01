@@ -134,6 +134,24 @@ function annotationStorageKey(webUrl) {
   return purifyURL(webUrl).hashCode();
 }
 
+function equivalentBookmarkUrlKey(webUrl) {
+  let purified = purifyURL(webUrl || '');
+  try {
+    let url = new URL(purified);
+    url.hash = '';
+    url.hostname = url.hostname.toLowerCase();
+    if ((url.protocol === 'http:' && url.port === '80') || (url.protocol === 'https:' && url.port === '443'))
+      url.port = '';
+    return url.href;
+  } catch (e) {
+    return purified;
+  }
+}
+
+function sameBookmarkUrl(left,right) {
+  return equivalentBookmarkUrlKey(left) === equivalentBookmarkUrlKey(right);
+}
+
 function splitTitleAndAnnotations(title) {
   let chunks = (title || '').split('#__#');
   return {
@@ -237,7 +255,7 @@ async function findYawasBookmarksByUrl(url) {
     await ensureYawasFolder();
   let bookmarks = await getYawasBookmarks();
   return bookmarks
-    .filter(item => item.url === url)
+    .filter(item => sameBookmarkUrl(item.url,url))
     .sort((a,b) => (a.dateAdded || 0) - (b.dateAdded || 0));
 }
 

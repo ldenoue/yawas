@@ -318,13 +318,18 @@ function yawas_signin()
 
 function yawas_undohighlight()
 {
-  if (lastHighlight !== null)
+  yawas_undoHighlight(lastHighlight);
+  lastHighlight = null;
+}
+
+function yawas_undoHighlight(highlight)
+{
+  if (highlight !== null && highlight.parentNode)
   {
     var f = document.createDocumentFragment();
-    while(lastHighlight.firstChild)
-      f.appendChild(lastHighlight.firstChild);
-    lastHighlight.parentNode.replaceChild(f,lastHighlight);
-    lastHighlight = null;
+    while(highlight.firstChild)
+      f.appendChild(highlight.firstChild);
+    highlight.parentNode.replaceChild(f,highlight);
   }
 }
 
@@ -417,8 +422,9 @@ function addHighlightsWrapper()
   }
 }
 
-function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommentwhendone)
+function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommentwhendone,highlightNode)
 {
+    var visualHighlight = highlightNode || lastHighlight;
     var additionalInfo = {
         "fn": "addhighlight",
         "title": title,
@@ -434,24 +440,67 @@ function yawas_storeHighlight(webUrl,title,highlight,occurence,couleur,addcommen
         signedin = true;
         setCharactersLeft(res.pureLen);
         updateHighlightCaption();
-        if (addcommentwhendone)
+        if (addcommentwhendone && visualHighlight)
         {
-          hoverElement = lastHighlight;
+          hoverElement = visualHighlight;
           recolor('note');
         }
       }
       if (res && res.toobig)
       {
-        yawas_undohighlight();
+        yawas_undoHighlight(visualHighlight);
         alert('Too many characters (>2048 even compacted)!');
       }
-      if (res && res.undohighlight || res.error)
+      if (res && (res.undohighlight || res.error))
       {
         if (res.signedout)
           alert('Yawas cannot store your highlight because you are signed out.\nPlease signin first and then refresh this page');
-        yawas_undohighlight();
+        yawas_undoHighlight(visualHighlight);
       }
     });
+}
+
+function yawas_selectionPieces(selectionstring)
+{
+    return selectionstring
+        .split(/[\r\n]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+}
+
+function yawas_rangeContainsSelection(containingRange,rng)
+{
+    return containingRange.compareBoundaryPoints(Range.END_TO_START, rng) == -1 &&
+        containingRange.compareBoundaryPoints(Range.START_TO_END, rng) == 1;
+}
+
+function yawas_findHighlightTarget(wnd,containingRange,selectionstring)
+{
+    var occurence = -1;
+    var found = false;
+    while (!found && wnd.find(selectionstring,true,false))
+    {
+        occurence += 1;
+        var rng = wnd.getSelection().getRangeAt(0);
+        if (yawas_rangeContainsSelection(containingRange,rng))
+            found = true;
+    }
+    if (!found)
+        return null;
+    return {
+        selectionstring: selectionstring,
+        occurence: occurence,
+        range: wnd.getSelection().getRangeAt(0).cloneRange()
+    };
+}
+
+function yawas_highlightTargetsInReverse(wnd,targets)
+{
+    for (var i=targets.length-1;i>=0;i--)
+    {
+        var target = targets[i];
+        target.node = highlightNowFirefox22(target.range,currentColor,forecolor,wnd.document,target.selectionstring,target.occurence);
+    }
 }
 
 function yawas_tryHighlight(wnd,addcommentwhendone)
@@ -466,29 +515,28 @@ function yawas_tryHighlight(wnd,addcommentwhendone)
     selectionstring = selectionstring.trim();
     if (selectionstring.length === 0)
         return false;
-    if (selectionstring.indexOf("\n") >= 0)
-    {
-        alert("Please select text without new lines");
-        return false;
-    }
     var docurl = yawas_getGoodUrl(wnd.document);
-    var occurence = -1;
+    var selectionstrings = yawas_selectionPieces(selectionstring);
     wnd.getSelection().removeAllRanges();
-    var found = false;
-    while (!found && wnd.find(selectionstring,true,false))
+    var targets = [];
+    for (var i=0;i<selectionstrings.length;i++)
     {
-        occurence += 1;
-        var rng = wnd.getSelection().getRangeAt(0);
-        if (selection.compareBoundaryPoints(Range.END_TO_START, rng) == -1 && selection.compareBoundaryPoints(Range.START_TO_END, rng) == 1)
-            found = true;
+        var target = yawas_findHighlightTarget(wnd,selection,selectionstrings[i]);
+        if (!target)
+        {
+            alert('Sorry, [' + selectionstrings[i] + '] was not found.');
+            wnd.getSelection().removeAllRanges();
+            return false;
+        }
+        targets.push(target);
     }
-    if (!found)
-        occurence = -1;
-    if (occurence >= 0)
+    if (targets.length > 0)
     {
-        lastHighlight = highlightNowFirefox22(wnd.getSelection().getRangeAt(0),currentColor,forecolor,wnd.document,selectionstring,occurence);
+        yawas_highlightTargetsInReverse(wnd,targets);
+        lastHighlight = targets[targets.length-1].node;
         wnd.getSelection().removeAllRanges();
-        yawas_storeHighlight(docurl,wnd.document.title,selectionstring,occurence,currentColor,addcommentwhendone);
+        for (var j=0;j<targets.length;j++)
+            yawas_storeHighlight(docurl,wnd.document.title,targets[j].selectionstring,targets[j].occurence,currentColor,addcommentwhendone && j === targets.length-1,targets[j].node);
         return true;
     }
     else

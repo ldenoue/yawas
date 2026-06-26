@@ -26,6 +26,7 @@ googleColors['grey'] = '#c0c0c0';
 googleColors['magenta'] = '#ff00ff';
 googleColors['white'] = 'transparent';
 var notRemapped = [];
+var commentsExpanded = false;
 
 function dragElement(div)
 {
@@ -181,6 +182,78 @@ function setHighlightsNotFound(array)
   }
 }
 
+function scrollToCommentedHighlight(highlight)
+{
+  if (!highlight)
+    return;
+  highlight.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
+  highlight.style.transition = 'opacity 0.3s ease-in-out';
+  highlight.style.opacity = 0.2;
+  setTimeout(function () { highlight.style.opacity = 1.0; }, 300);
+}
+
+function updateVisibleComments()
+{
+  if (!highlightswrapper)
+    return;
+
+  var drawer = highlightswrapper.querySelector('#yawas_comments_drawer');
+  var toggle = highlightswrapper.querySelector('#yawas_comments_toggle');
+  var comments = highlightswrapper.querySelector('#yawas_comments');
+  if (!drawer || !toggle || !comments)
+    return;
+
+  comments.textContent = '';
+
+  var highlights = document.querySelectorAll('.yawas-highlight[data-comment]');
+  var commentCount = 0;
+  for (var i=0;i<highlights.length;i++)
+  {
+    var comment = highlights[i].dataset.comment;
+    if (!comment)
+      continue;
+
+    commentCount++;
+    var note = document.createElement('div');
+    note.className = 'yawas-comment-note';
+    note.textContent = commentCount + '. ' + comment;
+    note.title = 'Click to jump to this note';
+    note.style.cursor = 'pointer';
+    note.style.marginTop = '6px';
+    note.style.padding = '4px 6px';
+    note.style.borderRadius = '4px';
+    note.style.backgroundColor = 'rgba(255,255,255,0.12)';
+    note.style.color = 'white';
+    note.style.lineHeight = '1.3';
+    note.style.whiteSpace = 'normal';
+    note.style.wordBreak = 'break-word';
+    note.addEventListener('mousedown',function (evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    });
+    note.addEventListener('click',(function (highlight) {
+      return function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        scrollToCommentedHighlight(highlight);
+      };
+    })(highlights[i]));
+    comments.appendChild(note);
+  }
+
+  drawer.style.display = commentCount > 0 ? 'block' : 'none';
+  toggle.textContent = (commentsExpanded ? '▾' : '▸') + ' Notes (' + commentCount + ')';
+  comments.style.display = commentCount > 0 && commentsExpanded ? 'block' : 'none';
+}
+
+function toggleVisibleComments(evt)
+{
+  evt.preventDefault();
+  evt.stopPropagation();
+  commentsExpanded = !commentsExpanded;
+  updateVisibleComments();
+}
+
 function updateHighlightCaption() {
     if (highlightswrapper)
     {
@@ -204,6 +277,7 @@ function updateHighlightCaption() {
       {
         highlightswrapper.style.display = 'none';
       }
+      updateVisibleComments();
     }
 
 }
@@ -391,6 +465,44 @@ function addHighlightsWrapper()
     highlightcaption.style.webkitUserSelect = 'none';
     highlightcaption.textContent = '';
     highlightswrapper.appendChild(highlightcaption);
+
+    var commentsDrawer = document.createElement('div');
+    commentsDrawer.id = 'yawas_comments_drawer';
+    commentsDrawer.style.display = 'none';
+    commentsDrawer.style.maxWidth = '280px';
+    commentsDrawer.style.marginTop = '8px';
+    commentsDrawer.style.paddingTop = '8px';
+    commentsDrawer.style.borderTop = '1px solid rgba(255,255,255,0.25)';
+    highlightswrapper.appendChild(commentsDrawer);
+
+    var commentsToggle = document.createElement('div');
+    commentsToggle.id = 'yawas_comments_toggle';
+    commentsToggle.title = 'Show or hide notes';
+    commentsToggle.style.cursor = 'pointer';
+    commentsToggle.style.textAlign = 'left';
+    commentsToggle.style.fontSize = '12px';
+    commentsToggle.style.fontWeight = 'bold';
+    commentsToggle.style.userSelect = 'none';
+    commentsToggle.style.webkitUserSelect = 'none';
+    commentsToggle.addEventListener('mousedown',function (evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    });
+    commentsToggle.addEventListener('click',toggleVisibleComments);
+    commentsDrawer.appendChild(commentsToggle);
+
+    var comments = document.createElement('div');
+    comments.id = 'yawas_comments';
+    comments.style.display = 'none';
+    comments.style.maxHeight = '220px';
+    comments.style.overflowY = 'auto';
+    comments.style.marginTop = '2px';
+    comments.style.textAlign = 'left';
+    comments.style.fontSize = '12px';
+    comments.style.fontWeight = 'normal';
+    comments.style.userSelect = 'text';
+    comments.style.webkitUserSelect = 'text';
+    commentsDrawer.appendChild(comments);
 
     var highlightsnotfound = document.createElement('div');
     highlightsnotfound.style.color = '#a22';
@@ -593,6 +705,7 @@ function recolor(color)
         hoverElement.dataset.comment = newcomment;
         hoverElement.title = newcomment;
       }
+      updateVisibleComments();
       updateHighlight(hoverElement,color,newcomment);
       hoverElement = null;
     }

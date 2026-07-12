@@ -1046,15 +1046,18 @@ function yawas_delete_highlight() {
     sendMessage({action: "delete_highlight", url: yawas_getGoodUrl(document), title: document.title, highlightString: elem.dataset.selection, n:elem.dataset.yawasOccurence }, function (res)
     {
       if (res && res.highlights)
+      {
         setCharactersLeft(computeLength(res.highlights));
+        childrenToo(elem,null);
+        var f = document.createDocumentFragment();
+        while(elem.firstChild)
+            f.appendChild(elem.firstChild);
+        if (elem.parentNode)
+          elem.parentNode.replaceChild(f,elem);
+        hoverElement = null;
+        updateHighlightCaption();
+      }
     });
-    childrenToo(elem,null);
-    var f = document.createDocumentFragment();
-    while(elem.firstChild)
-        f.appendChild(elem.firstChild);
-    elem.parentNode.replaceChild(f,elem);
-    hoverElement = null;
-    updateHighlightCaption();
   }
 }
 
